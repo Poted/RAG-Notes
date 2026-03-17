@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAG Notes</title>
+    <title>RAG Agent</title>
     <link rel="icon" type="image/png" href="/static/icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -14,10 +14,23 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-50 text-gray-900">
+<body class="bg-gray-50 text-gray-900" onload="initApp()">
     <div class="max-w-2xl mx-auto min-h-screen flex flex-col bg-white shadow-sm">
         <header class="border-b p-4 flex justify-between items-center bg-white sticky top-0 z-10">
-            <h1 class="text-lg font-semibold tracking-tight">RAG Agent</h1>
+            <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-lg font-semibold tracking-tight">RAG Agent</h1>
+                    <div class="flex items-center gap-1 border-l pl-3 ml-1">
+                        <select id="context-select" onchange="changeContext()" class="text-[10px] border border-gray-200 rounded outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 py-1 pl-2 pr-4 cursor-pointer max-w-[100px]"></select>
+                        <button onclick="createNewContext()" class="text-gray-400 hover:text-blue-600 px-1 text-lg font-light">+</button>
+                        <button onclick="deleteCurrentContext()" class="text-gray-400 hover:text-red-600 px-1 text-lg font-light">×</button>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[9px] text-gray-400 uppercase font-bold tracking-tighter">Model:</span>
+                    <select id="model-select" class="text-[10px] border-none bg-transparent outline-none text-blue-600 cursor-pointer font-medium"></select>
+                </div>
+            </div>
             <div class="flex gap-2">
                 <button onclick="toggleDocs()" class="text-sm border px-3 py-1 rounded hover:bg-gray-50">Memory</button>
                 <button onclick="clearChat()" class="text-sm border border-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-50">Reset</button>
@@ -26,50 +39,133 @@
 
         <div id="docs-panel" class="hidden p-6 bg-gray-50 border-b overflow-y-auto max-h-[65vh]">
             <section class="mb-8">
-                <h3 class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Wzbogać bazę wiedzy</h3>
-                <textarea id="doc-input" class="w-full p-3 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Wklej tekst do przeanalizowania..."></textarea>
-                <button onclick="addDoc()" class="w-full mt-3 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition">Wyodrębnij i zapamiętaj fakty</button>
+                <h3 class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Enrich Knowledge Base</h3>
+                <textarea id="doc-input" class="w-full p-3 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Paste text to analyze..."></textarea>
+                <button onclick="addDoc()" class="w-full mt-3 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition">Extract and Save Facts</button>
             </section>
             
             <section>
                 <div class="flex justify-between items-center mb-3 gap-4">
-                    <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-widest whitespace-nowrap">Zapisane fakty</h3>
-                    <input type="text" id="search-docs" onkeyup="filterDocs()" placeholder="Szukaj w całej bazie..." class="w-full p-2 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                    <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-widest whitespace-nowrap">Saved Facts</h3>
+                    <input type="text" id="search-docs" onkeyup="filterDocs()" placeholder="Search entire database..." class="w-full p-2 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 bg-white">
                 </div>
                 <div id="docs-list" class="space-y-2 mb-4"></div>
                 <div class="flex justify-between items-center border-t border-gray-100 pt-2">
-                    <button id="prev-btn" onclick="prevPage()" class="text-xs font-medium text-blue-600 disabled:text-gray-300 px-2 py-1">← Nowsze</button>
+                    <button id="prev-btn" onclick="prevPage()" class="text-xs font-medium text-blue-600 disabled:text-gray-300 px-2 py-1">← Newer</button>
                     <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-gray-400 font-mono">STRONA</span>
+                        <span class="text-[10px] text-gray-400 font-mono">PAGE</span>
                         <input type="number" id="page-input" onchange="goToPage()" class="w-12 p-1 text-center text-xs border border-gray-200 rounded outline-none" min="1">
                     </div>
-                    <button id="next-btn" onclick="nextPage()" class="text-xs font-medium text-blue-600 disabled:text-gray-300 px-2 py-1">Starsze →</button>
+                    <button id="next-btn" onclick="nextPage()" class="text-xs font-medium text-blue-600 disabled:text-gray-300 px-2 py-1">Older →</button>
                 </div>
             </section>
         </div>
 
         <main id="note-content" class="note-container overflow-y-auto p-6 space-y-8">
-            <div class="text-center text-gray-400 mt-20 font-light italic">Zadaj pytanie, aby przeszukać bazę wiedzy...</div>
+            <div class="text-center text-gray-400 mt-20 font-light italic" id="welcome-msg">Loading workspaces...</div>
         </main>
 
         <footer class="p-4 border-t bg-white">
             <div class="flex gap-3">
                 <input type="text" id="query-input" 
                     class="flex-1 p-3.5 bg-gray-100 rounded-xl outline-none text-sm" 
-                    placeholder="O co chcesz zapytać?">
-                <button onclick="sendQuery()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700">Analizuj</button>
+                    placeholder="What do you want to ask?">
+                <button onclick="sendQuery()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700">Analyze</button>
             </div>
         </footer>
     </div>
 
     <script>
         const noteContent = document.getElementById('note-content');
-        const sessionId = "session-" + Math.random().toString(36).substring(7);
+        const welcomeMsg = document.getElementById('welcome-msg');
+        const contextSelect = document.getElementById('context-select');
+        let sessionId = "session-" + Math.random().toString(36).substring(7);
         
         let currentOffset = 0;
         const limit = 10;
         let currentSearch = "";
         let searchTimeout;
+
+        async function initApp() {
+            await fetchModels();
+            await fetchContexts();
+            if (contextSelect.options.length === 0) {
+                await createContextAPI("general");
+                await fetchContexts();
+            }
+            welcomeMsg.innerText = `Ask a question to search the '${contextSelect.value}' workspace...`;
+        }
+
+        async function fetchModels() {
+            const resp = await fetch('/models');
+            const data = await resp.json();
+            const modelSelect = document.getElementById('model-select');
+            data.models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = m.replace('models/', '');
+                if(m.includes('flash')) opt.selected = true;
+                modelSelect.appendChild(opt);
+            });
+        }
+
+        async function fetchContexts() {
+            const resp = await fetch('/contexts');
+            const data = await resp.json();
+            const currentVal = contextSelect.value;
+            contextSelect.innerHTML = '';
+            
+            data.contexts.forEach(ctx => {
+                const opt = document.createElement('option');
+                opt.value = ctx;
+                opt.innerText = ctx;
+                contextSelect.appendChild(opt);
+            });
+
+            if (data.contexts.includes(currentVal)) {
+                contextSelect.value = currentVal;
+            }
+        }
+
+        async function createContextAPI(name) {
+            await fetch('/contexts', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name: name})
+            });
+        }
+
+        async function createNewContext() {
+            const name = prompt("Enter new workspace name (alphanumeric, no spaces):");
+            if (!name) return;
+            const cleanName = name.replace(/[^a-zA-Z0-9_-]/g, "").toLowerCase();
+            if (cleanName.length < 3 || cleanName.length > 63) {
+                alert("Name must be 3-63 characters, letters and numbers only.");
+                return;
+            }
+            await createContextAPI(cleanName);
+            await fetchContexts();
+            contextSelect.value = cleanName;
+            changeContext();
+        }
+
+        async function deleteCurrentContext() {
+            const ctx = contextSelect.value;
+            if (!ctx) return;
+            if (confirm(`Are you sure you want to delete workspace '${ctx}' and all its memory?`)) {
+                await fetch(`/contexts/${ctx}`, { method: 'DELETE' });
+                await initApp();
+            }
+        }
+
+        function changeContext() {
+            clearChat();
+            welcomeMsg.innerText = `Ask a question to search the '${contextSelect.value}' workspace...`;
+            currentOffset = 0;
+            if(!document.getElementById('docs-panel').classList.contains('hidden')) {
+                loadDocs();
+            }
+        }
 
         function renderMarkdownWithCharts(text, container) {
             container.innerHTML = "";
@@ -129,7 +225,9 @@
         }
 
         async function loadDocs() {
-            const url = `/documents?limit=${limit}&offset=${currentOffset}${currentSearch ? '&search=' + encodeURIComponent(currentSearch) : ''}`;
+            const ctx = contextSelect.value;
+            if (!ctx) return;
+            const url = `/documents?context_name=${ctx}&limit=${limit}&offset=${currentOffset}${currentSearch ? '&search=' + encodeURIComponent(currentSearch) : ''}`;
             const resp = await fetch(url);
             const data = await resp.json();
             const list = document.getElementById('docs-list');
@@ -139,7 +237,7 @@
                     <span class="flex-1 text-gray-700">${d.content}</span>
                     <button onclick="deleteDoc('${d.id}')" class="text-red-400 hover:text-red-600 px-1 text-lg font-light">×</button>
                 </div>
-            `).join('') : '<p class="text-xs text-gray-400 italic">Brak wyników.</p>';
+            `).join('') : '<p class="text-xs text-gray-400 italic">No results found.</p>';
 
             document.getElementById('prev-btn').disabled = currentOffset === 0;
             document.getElementById('next-btn').disabled = data.documents.length < limit || (currentOffset + limit >= data.total);
@@ -178,61 +276,67 @@
         }
 
         async function deleteDoc(id) {
-            await fetch(`/documents?doc_id=${id}`, { method: 'DELETE' });
+            const ctx = contextSelect.value;
+            await fetch(`/documents?context_name=${ctx}&doc_id=${id}`, { method: 'DELETE' });
             loadDocs();
         }
 
         async function clearChat() {
             await fetch(`/session/${sessionId}`, { method: 'DELETE' });
-            noteContent.innerHTML = '<div class="text-center text-gray-400 mt-20 font-light italic">Pamięć rozmowy wyczyszczona.</div>';
+            sessionId = "session-" + Math.random().toString(36).substring(7);
+            noteContent.innerHTML = `<div class="text-center text-gray-400 mt-20 font-light italic" id="welcome-msg">Ask a question to search the '${contextSelect.value}' workspace...</div>`;
         }
 
         async function addDoc() {
+            const ctx = contextSelect.value;
             const btn = event.target;
             const text = document.getElementById('doc-input').value;
-            if(!text) return;
+            if(!text || !ctx) return;
             
             btn.disabled = true;
-            btn.textContent = "Przetwarzanie...";
+            btn.textContent = "Processing...";
             
+            const model = document.getElementById('model-select').value;
             await fetch('/add_document', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({text})
+                body: JSON.stringify({text: text, context_name: ctx, model_name: model})
             });
             
             document.getElementById('doc-input').value = '';
             btn.disabled = false;
-            btn.textContent = "Wyodrębnij i zapamiętaj fakty";
+            btn.textContent = "Extract and Save Facts";
             
             currentOffset = 0;
             loadDocs();
         }
 
         async function sendQuery() {
+            const ctx = contextSelect.value;
             const input = document.getElementById('query-input');
             const question = input.value;
-            if(!question) return;
+            if(!question || !ctx) return;
             
             if(noteContent.querySelector('.text-gray-400')) noteContent.innerHTML = '';
             
             const uDiv = document.createElement('div');
             uDiv.className = "border-l-4 border-blue-500 pl-4 py-1 mb-6";
-            uDiv.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 tracking-wider">Pytanie</h4>
+            uDiv.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 tracking-wider">Question</h4>
                             <p class="text-lg font-medium text-gray-900">${question}</p>`;
             noteContent.appendChild(uDiv);
             input.value = '';
 
+            const model = document.getElementById('model-select').value;
             const resp = await fetch('/query', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({question, session_id: sessionId})
+                body: JSON.stringify({question: question, session_id: sessionId, context_name: ctx, model_name: model})
             });
             const data = await resp.json();
             
             const aDiv = document.createElement('div');
             aDiv.className = "prose max-w-none pb-10 border-b border-gray-50";
-            aDiv.innerHTML = `<h4 class="text-[10px] font-bold text-gray-300 uppercase mb-4 tracking-widest">Analiza wiedzy</h4>`;
+            aDiv.innerHTML = `<h4 class="text-[10px] font-bold text-gray-300 uppercase mb-4 tracking-widest">Knowledge Analysis</h4>`;
             
             const contentContainer = document.createElement('div');
             contentContainer.className = "text-gray-800 leading-relaxed";

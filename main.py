@@ -2,7 +2,6 @@ import os
 import time
 import hashlib
 import json
-import socket
 from typing import Optional, List, Dict
 from dotenv import load_dotenv
 import chromadb
@@ -16,6 +15,8 @@ from datetime import datetime
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi import Depends, status
 import secrets
+
+from prompts import get_extraction_prompt, get_analysis_prompt, get_system_instructions, get_contextualize_prompt
 
 security = HTTPBasic()
 load_dotenv()
@@ -34,13 +35,10 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
         )
     return credentials.username
 
-api_key = os.environ.get("GEMINI_API_KEY")
-model_name = os.environ.get("MODEL_NAME")
+api_key = os.environ.get("API_KEY")
 client = genai.Client(api_key=api_key)
 
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
-collection = chroma_client.get_or_create_collection(name="documents")
-
 chat_history: Dict[str, List[Dict[str, str]]] = {}
 embedder = None
 
@@ -51,7 +49,7 @@ def get_embedder():
         embedder = SentenceTransformer('all-MiniLM-L6-v2')
     return embedder
 
-def generate_with_retry(prompt, config=None, retries=3, delay=10):
+def generate_with_retry(model_name, prompt, config=None, retries=3, delay=10):
     for attempt in range(retries):
         try:
             return client.models.generate_content(
@@ -61,7 +59,6 @@ def generate_with_retry(prompt, config=None, retries=3, delay=10):
             )
         except Exception as e:
             if attempt < retries - 1:
-                print(f"Retrying Gemini API ({attempt + 1}/{retries}) due to: {e}")
                 time.sleep(delay)
             else:
                 raise e
@@ -75,31 +72,35 @@ def chunk_text(text: str, size: int = 4000, overlap: int = 400):
         start += size - overlap
     return chunks
 
-def contextualize_query(session_id: str, question: str):
+def contextualize_query(model_name, session_id: str, question: str):
     history = chat_history.get(session_id, [])
     if not history:
         return question
     history_str = "\n".join([f"{m['role']}: {m['content']}" for m in history])
-    prompt = f"History:\n{history_str}\n\nFollow-up: {question}\n\nRephrase to standalone question:"
-    response = generate_with_retry(prompt)
+    prompt = get_contextualize_prompt(history_str, question)
+    response = generate_with_retry(model_name, prompt)
     return response.text.strip()
 
 app = FastAPI(title="RAG Agent")
 
+class ContextRequest(BaseModel):
+    name: str
+
 class DocumentRequest(BaseModel):
     text: str
+    context_name: str
+    model_name: str
 
 class QueryRequest(BaseModel):
     question: str
     session_id: str = "default"
+    context_name: str
+    model_name: str
 
 class QueryAnalysis(BaseModel):
     is_analytical: bool
     category: str | None
     standalone_question: str
-
-class ExtractedFacts(BaseModel):
-    facts: list[str]
 
 class FactEntry(BaseModel):
     fact: str
@@ -113,9 +114,42 @@ class ExtractedData(BaseModel):
 async def favicon():
     return FileResponse("static/icon.png")
 
-@app.get("/documents", dependencies=[Depends(authenticate)])
-async def list_documents(limit: int = 10, offset: int = 0, search: Optional[str] = None):
+@app.get("/models", dependencies=[Depends(authenticate)])
+async def list_models():
     try:
+        models = client.models.list()
+        return {"models": [m.name for m in models if "generateContent" in m.supported_generation_methods]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/contexts", dependencies=[Depends(authenticate)])
+async def list_contexts():
+    try:
+        collections = chroma_client.list_collections()
+        return {"contexts": [c.name for c in collections]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/contexts", dependencies=[Depends(authenticate)])
+async def create_context(req: ContextRequest):
+    try:
+        chroma_client.create_collection(name=req.name)
+        return {"message": "Created"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/contexts/{context_name}", dependencies=[Depends(authenticate)])
+async def delete_context(context_name: str):
+    try:
+        chroma_client.delete_collection(name=context_name)
+        return {"message": "Deleted"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/documents", dependencies=[Depends(authenticate)])
+async def list_documents(context_name: str = Query(...), limit: int = 10, offset: int = 0, search: Optional[str] = None):
+    try:
+        collection = chroma_client.get_collection(name=context_name)
         total = collection.count()
         if total == 0:
             return {"total": 0, "documents": []}
@@ -124,40 +158,27 @@ async def list_documents(limit: int = 10, offset: int = 0, search: Optional[str]
             all_data = collection.get()
             docs_all = []
             search_lower = search.lower()
-            
             if all_data['ids']:
                 for i in range(len(all_data['ids'])):
                     content = all_data['documents'][i]
                     if search_lower in content.lower():
-                        docs_all.append({
-                            "id": all_data['ids'][i], 
-                            "content": content
-                        })
-            
+                        docs_all.append({"id": all_data['ids'][i], "content": content})
             docs_all = docs_all[::-1]
-            paginated_docs = docs_all[offset:offset+limit]
-            return {"total": len(docs_all), "documents": paginated_docs}
-        
+            return {"total": len(docs_all), "documents": docs_all[offset:offset+limit]}
         else:
             start = max(0, total - offset - limit)
             actual_limit = min(limit, total - offset)
-            
-            if actual_limit <= 0:
-                return {"total": total, "documents": []}
-
+            if actual_limit <= 0: return {"total": total, "documents": []}
             results = collection.get(limit=actual_limit, offset=start)
-            docs = []
-            for i in range(len(results['ids'])):
-                docs.append({"id": results['ids'][i], "content": results['documents'][i]})
-            
+            docs = [{"id": results['ids'][i], "content": results['documents'][i]} for i in range(len(results['ids']))]
             return {"total": total, "documents": docs[::-1]}
-            
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/documents", dependencies=[Depends(authenticate)])
-async def delete_document(doc_id: str = Query(...)):
+async def delete_document(context_name: str = Query(...), doc_id: str = Query(...)):
     try:
+        collection = chroma_client.get_collection(name=context_name)
         collection.delete(ids=[doc_id])
         return {"message": "Deleted"}
     except Exception as e:
@@ -171,72 +192,31 @@ async def reset_session(session_id: str):
 @app.post("/add_document", dependencies=[Depends(authenticate)])
 async def add_document(request: DocumentRequest):
     try:
+        collection = chroma_client.get_collection(name=request.context_name)
         current_date = datetime.now().strftime("%Y-%m-%d")
         chunks = chunk_text(request.text)
         inst = get_embedder()
-        
         pending_docs, pending_embeddings, pending_ids, pending_metadatas = [], [], [], []
-        
-        cfg = types.GenerateContentConfig(
-            response_mime_type="application/json", 
-            response_schema=ExtractedData,
-            temperature=0.1
-        )
+        cfg = types.GenerateContentConfig(response_mime_type="application/json", response_schema=ExtractedData, temperature=0.1)
 
         for i, chunk in enumerate(chunks):
-            if i > 0:
-                time.sleep(1.5)
-            
-            prompt = f"""
-            Extract SHORT, ATOMIC facts from the text.
-            
-            RULES:
-            1. If it is a personal event, log, or action, determine the 'date' using {current_date} as today. Use YYYY-MM-DD.
-            2. If it is static knowledge, specification, or general fact, set 'date' to null.
-            3. Assign a simple 1-word 'category'.
-            4. The 'fact' string should be a clean sentence.
-            
-            Text to process:
-            {chunk}
-            """
-            
-            resp = generate_with_retry(prompt, config=cfg)
-            
-            try:
-                clean_json = resp.text.strip().replace("```json", "").replace("```", "")
-                data = json.loads(clean_json)
-                
-                for entry in data.get("entries", []):
-                    fact_text = entry.get("fact")
-                    fact_date = entry.get("date")
-                    fact_cat = entry.get("category", "general")
-                    
-                    if not fact_text:
-                        continue
-                        
-                    display_text = f"{fact_date}: {fact_text}" if fact_date else fact_text
-                    fid = hashlib.md5(display_text.encode('utf-8')).hexdigest()
-                    
-                    meta = {"category": fact_cat}
-                    if fact_date:
-                        meta["date"] = fact_date
-
-                    pending_docs.append(display_text)
-                    pending_embeddings.append(inst.encode(display_text).tolist())
-                    pending_ids.append(fid)
-                    pending_metadatas.append(meta)
-                    
-            except Exception:
-                raise Exception("Failed to parse facts from AI response.")
+            if i > 0: time.sleep(1.5)
+            prompt = get_extraction_prompt(current_date, chunk)
+            resp = generate_with_retry(request.model_name, prompt, config=cfg)
+            data = json.loads(resp.text.strip().replace("```json", "").replace("```", ""))
+            for entry in data.get("entries", []):
+                fact_text = entry.get("fact")
+                fact_date = entry.get("date")
+                if not fact_text: continue
+                display_text = f"{fact_date}: {fact_text}" if fact_date else fact_text
+                fid = hashlib.md5(display_text.encode('utf-8')).hexdigest()
+                pending_docs.append(display_text)
+                pending_embeddings.append(inst.encode(display_text).tolist())
+                pending_ids.append(fid)
+                pending_metadatas.append({"category": entry.get("category", "general"), "date": fact_date})
 
         if pending_ids:
-            collection.upsert(
-                documents=pending_docs,
-                embeddings=pending_embeddings,
-                ids=pending_ids,
-                metadatas=pending_metadatas
-            )
-                
+            collection.upsert(documents=pending_docs, embeddings=pending_embeddings, ids=pending_ids, metadatas=pending_metadatas)
         return {"message": "Knowledge updated", "facts_count": len(pending_ids)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -244,105 +224,43 @@ async def add_document(request: DocumentRequest):
 @app.post("/query", dependencies=[Depends(authenticate)])
 async def query(request: QueryRequest):
     try:
+        collection = chroma_client.get_collection(name=request.context_name)
         raw_question = request.question.strip()
         current_date = datetime.now().strftime("%Y-%m-%d")
+        cfg_analyze = types.GenerateContentConfig(response_mime_type="application/json", response_schema=QueryAnalysis, temperature=0.0)
         
-        prompt_analyze = f"""
-        Analyze the user question.
-        Current date: {current_date}
-        1. 'is_analytical': true if the user asks for stats, chart, average, sum, count, or uses 'analyze:' prefix.
-        2. 'category': guess the category from the question. Return null if general.
-        3. 'standalone_question': rephrase the question to be standalone.
-        
-        Question: {raw_question}
-        """
-        
-        cfg_analyze = types.GenerateContentConfig(
-            response_mime_type="application/json", 
-            response_schema=QueryAnalysis,
-            temperature=0.0
-        )
-        
-        analysis_resp = generate_with_retry(prompt_analyze, config=cfg_analyze)
-        clean_json = analysis_resp.text.strip().replace("```json", "").replace("```", "")
-        analysis = json.loads(clean_json)
+        analysis_resp = generate_with_retry(request.model_name, get_analysis_prompt(current_date, raw_question), config=cfg_analyze)
+        analysis = json.loads(analysis_resp.text.strip().replace("```json", "").replace("```", ""))
         
         is_stats = analysis.get("is_analytical", False)
         cat = analysis.get("category")
         q = analysis.get("standalone_question", raw_question)
         
-        where_clause = None
-        if cat and cat.lower() != "general":
-            where_clause = {"category": cat.lower()}
-            
         if is_stats:
-            if where_clause:
-                res = collection.get(where=where_clause)
-            else:
-                res = collection.get(limit=500)
-            
-            docs = res.get('documents', [])
-            ctx = "\n".join(docs) if docs else ""
+            where_clause = {"category": cat.lower()} if cat and cat.lower() != "general" else None
+            res = collection.get(where=where_clause) if where_clause else collection.get(limit=500)
+            ctx = "\n".join(res.get('documents', []))
         else:
             inst = get_embedder()
-            if where_clause:
-                res = collection.query(query_embeddings=[inst.encode(q).tolist()], n_results=15, where=where_clause)
-            else:
-                res = collection.query(query_embeddings=[inst.encode(q).tolist()], n_results=15)
-                
-            docs = res.get('documents', [])
-            ctx = "\n\n".join(docs[0]) if docs and docs[0] else ""
+            res = collection.query(query_embeddings=[inst.encode(q).tolist()], n_results=15)
+            ctx = "\n\n".join(res.get('documents', [])[0]) if res.get('documents') else ""
 
-        system_instructions = f"""
-        Current Date: {current_date}
-        You are a highly intelligent, conversational AI assistant.
+        final_prompt = f"{get_system_instructions(current_date)}\n\nContext:\n{ctx}\n\nQuestion: {q}\n\nAnswer:"
+        resp = generate_with_retry(request.model_name, final_prompt)
         
-        CORE RULES:
-        1. Talk naturally. Use your vast general knowledge to answer the user's questions thoroughly.
-        2. The provided Context is your "memory" of the user. Use it to personalize the interaction ONLY when it makes sense. 
-        3. DO NOT force connections.
-        4. ONLY act as a strict data analyst and generate charts ([CHART]JSON[/CHART]) if the user explicitly asked to calculate/chart their personal data or trends.
-        5. If exact numerical values are missing, use general knowledge to provide reasonable average estimates. DO NOT refuse to calculate. State clearly that you are using estimated averages.
-        6. Exclude missing days from calculations. Calculate averages ONLY based on present context.
-        7. Resolve relative dates using {current_date}.
-        """
-        
-        final_prompt = f"{system_instructions}\n\nContext:\n{ctx}\n\nQuestion: {q}\n\nAnswer:"
-        resp = generate_with_retry(final_prompt)
-        
-        if request.session_id not in chat_history: 
-            chat_history[request.session_id] = []
+        if request.session_id not in chat_history: chat_history[request.session_id] = []
         chat_history[request.session_id].append({"role": "user", "content": raw_question})
         chat_history[request.session_id].append({"role": "assistant", "content": resp.text})
         
         return {"answer": resp.text}
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 @app.get("/", dependencies=[Depends(authenticate)])
-async def index():
-    return FileResponse("static/index.html")
-
-def get_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(('8.8.8.8', 1))
-        ip = s.getsockname()[0]
-    except Exception:
-        ip = '127.0.0.1'
-    finally:
-        s.close()
-    return ip
+async def index(): return FileResponse("static/index.html")
 
 if __name__ == "__main__":
     import uvicorn
-    local_ip = get_ip()
-    print(f"\n" + "="*40)
-    print(f"RAG AGENT RUNNING")
-    print(f"Local URL:  http://localhost:8000")
-    print(f"Mobile URL: http://{local_ip}:8000")
-    print(f"="*40 + "\n")
+    print(f"Running on port 8000")
     uvicorn.run(app, host="0.0.0.0", port=8000)
