@@ -1,24 +1,184 @@
-.prose p { margin-bottom: 0.75rem; }
-.prose h1, .prose h2 { font-weight: bold; margin-top: 1.2rem; margin-bottom: 0.5rem; }
+html.dark ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+html.dark ::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+body:not(.dark) {
+    color: #1d1d1f !important;
+}
+
+body:not(.dark) .bg-gray-900 {
+    background-color: #2c2c2e !important;
+}
+
+body:not(.dark) .text-gray-900 {
+    color: #1d1d1f !important; 
+}
+
+h1 {
+    color: #1d1d1f !important;
+    transition: color 0.3s ease;
+}
+
+html.dark h1 {
+    color: #ffffff !important;
+}
+
+header, footer {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    transition: all 0.3s ease;
+}
+
+header {
+    border-bottom: 1px solid rgba(0, 122, 255, 0.15) !important;
+    box-shadow: 0 4px 15px rgba(0, 122, 255, 0.08) !important;
+}
+
+footer {
+    border-top: 1px solid rgba(0, 122, 255, 0.15) !important;
+    box-shadow: 0 -4px 15px rgba(0, 122, 255, 0.08) !important;
+}
+
+html.dark header {
+    border-bottom: 1px solid rgba(0, 122, 255, 0.3) !important;
+    box-shadow: 0 8px 32px -8px rgba(0, 122, 255, 0.3) !important;
+}
+
+html.dark footer {
+    border-top: 1px solid rgba(0, 122, 255, 0.3) !important;
+    box-shadow: 0 -8px 32px -8px rgba(0, 122, 255, 0.3) !important;
+}
+
+@media (min-width: 768px) {
+    header {
+        margin: 12px 12px 0 12px !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(0, 122, 255, 0.15) !important;
+    }
+    footer {
+        margin: 0 12px 12px 12px !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(0, 122, 255, 0.15) !important;
+    }
+    html.dark header, html.dark footer {
+        border: 1px solid rgba(0, 122, 255, 0.3) !important;
+    }
+}
+
+@media (min-width: 1024px) {
+    #note-content {
+        padding-left: 3rem !important;
+        padding-right: 3rem !important;
+    }
+}
+
+.elegant-glow {
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04), inset 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.dark .elegant-glow {
+    box-shadow: 0 0 15px rgba(0, 122, 255, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+}
+
+.tts-active {
+    background-color: #f0f8ff !important;
+    color: #007aff !important;
+    box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.3), 0 0 15px rgba(0, 122, 255, 0.15) !important;
+}
+
+html.dark .tts-active {
+    background-color: rgba(10, 132, 255, 0.1) !important;
+    color: #0a84ff !important;
+    box-shadow: 0 0 20px rgba(10, 132, 255, 0.4), inset 0 0 0 1px rgba(10, 132, 255, 0.4) !important;
+    border-color: transparent !important;
+}
+
+html.dark #note-content, 
+html.dark #note-content p, 
+html.dark #note-content span, 
+html.dark #note-content div, 
+html.dark #note-content li,
+html.dark #docs-panel,
+html.dark #docs-panel * {
+    color: #d1d1d6 !important;
+}
+
+html.dark #note-content [class*="text-gray-"],
+html.dark #note-content [class*="text-black"] {
+    color: #d1d1d6 !important;
+}
+
+html.dark .bg-gray-400,
+html.dark #docs-list > div,
+html.dark #note-content .bg-white,
+html.dark #note-content [class*="bg-gray-50"],
+html.dark #note-content [class*="bg-gray-100"] {
+    background-color: #1c1c1e !important;
+    border: none !important;
+    border-radius: 20px !important;
+    color: #f5f5f7 !important;
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark #docs-list > div button {
+    color: #8e8e93 !important;
+}
+
+html.dark #docs-list > div button:hover {
+    color: #ff453a !important;
+}
+
+html.dark #note-content strong,
+html.dark #note-content h1,
+html.dark #note-content h2,
+html.dark #note-content h3 {
+    color: #f5f5f7 !important;
+}
+
+html.dark canvas {
+    background-color: #1c1c1e !important;
+    border-radius: 20px !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    filter: none !important;
+}
+
+.prose p { margin-bottom: 0.75rem; line-height: 1.6; }
+.prose h1, .prose h2, .prose h3 { font-weight: 600; margin-top: 1.2rem; margin-bottom: 0.5rem; }
 .prose ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; }
 
 .custom-select {
     appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%238e8e93' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
     background-position: right 0.5rem center;
     background-repeat: no-repeat;
     background-size: 1.2em 1.2em;
 }
 
 @keyframes mic-pulse {
-    0% { transform: scale(1); color: #ef4444; opacity: 1; }
-    50% { transform: scale(1.2); color: #b91c1c; opacity: 0.7; }
-    100% { transform: scale(1); color: #ef4444; opacity: 1; }
+    0% { transform: scale(1); color: #ff3b30; opacity: 1; }
+    50% { transform: scale(1.2); color: #ff453a; opacity: 0.7; }
+    100% { transform: scale(1); color: #ff3b30; opacity: 1; }
 }
 
 .mic-active { 
     animation: mic-pulse 1.5s infinite; 
 }
+
 
 .tts-active {
     background-color: #eff6ff;

@@ -7,10 +7,14 @@ def get_extraction_prompt(current_date: str, chunk: str) -> str:
     2. If it is static knowledge, specification, or general fact, set 'date' to null.
     3. Assign a simple 1-word 'category'.
     4. The 'fact' string should be a clean sentence.
+    5. EXPLICIT TIMEFRAME: ONLY prepend the current date if the user explicitly specifies a timeframe (e.g., "today", "tomorrow", "this month", "next week"). Example User input: "I want to eat pizza today." -> Extracted fact: "[{current_date}] The user wants to eat pizza."
+    6. NO TIME WORD = NULL DATE: If the input lacks an explicit temporal trigger (like 'today', 'now', 'this week', 'yesterday'), you MUST set 'date' to null, even for personal statements. General states or skills (e.g., "I write in Go") are NOT logs and MUST have a null date unless a timeframe is mentioned.
+    7. GENERAL GOALS: DO NOT add any dates to general goals, skills they want to learn, or long-term desires that lack a specific timeframe. Example User input: "I want to learn how to fly a drone." -> Extracted fact: "The user wants to learn how to fly a drone."
     
     Text to process:
     {chunk}
     """
+    
 
 def get_analysis_prompt(current_date: str, history_str: str, raw_question: str) -> str:
     return f"""

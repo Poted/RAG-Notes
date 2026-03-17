@@ -6,91 +6,135 @@
     <title>Context Notes</title>
     <link rel="icon" type="image/png" href="/static/icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="bg-gray-50 text-gray-900 h-[100dvh] overflow-hidden" onload="initApp()">
-    <div class="max-w-3xl mx-auto h-full flex flex-col bg-white shadow-md relative">
+<body class="bg-gray-50 dark:bg-[#1c1c1e] text-[#1d1d1f] dark:text-[#d1d1d6] h-[100dvh] overflow-hidden" onload="initApp(); initDarkMode();">
+    <div class="max-w-3xl lg:max-w-5xl xl:max-w-6xl mx-auto h-full flex flex-col bg-white dark:bg-[#1c1c1e] relative">
         
-        <header class="shrink-0 border-b px-4 py-3 bg-white flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-3 z-30">
-            <div class="flex items-center justify-between w-full sm:w-auto gap-3">
-                <div class="flex items-center gap-3">
-                    <h1 class="text-xl font-bold tracking-tight text-gray-800">Context Notes</h1>
-                    <div class="flex items-center gap-1 border-l pl-3 border-gray-200">
-                        <select id="context-select" onchange="changeContext()" class="custom-select text-xs font-medium border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 bg-white py-1.5 pl-2 pr-7 shadow-sm cursor-pointer w-[110px] sm:w-[130px] truncate"></select>
-                        <button onclick="createNewContext()" class="text-gray-400 hover:text-blue-600 px-2 py-1 bg-gray-50 hover:bg-blue-50 rounded-md text-lg font-light transition-all">+</button>
-                        <button onclick="deleteCurrentContext()" class="text-gray-400 hover:text-red-600 px-2 py-1 bg-gray-50 hover:bg-red-50 rounded-md text-lg font-light transition-all">×</button>
-                    </div>
+        <header class="shrink-0 border-b border-gray-200 dark:border-white/5 px-4 py-4 bg-white/80 dark:bg-[#2c2c2e]/80 backdrop-blur-3xl flex flex-col gap-4 z-30">
+            <div class="flex items-center justify-between w-full">
+                <h1 class="text-2xl font-bold tracking-tight dark:text-white whitespace-nowrap">Context Notes</h1>
+                
+                <div class="flex items-center gap-1.5 overflow-hidden">
+                    <select id="context-select" onchange="changeContext()" class="custom-select text-xs font-medium border border-gray-300 dark:border-transparent rounded-full outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/20 bg-white dark:bg-[#23252d] dark:text-white py-2 pl-3 pr-8 shadow-sm cursor-pointer w-[110px] sm:w-[130px] truncate elegant-glow"></select>
+                    <button onclick="createNewContext()" class="flex items-center justify-center w-8 h-8 text-gray-500 dark:text-white bg-gray-100 hover:bg-gray-200 dark:bg-[#23252d] dark:hover:bg-white/10 border border-transparent dark:border-transparent rounded-full text-lg font-light transition-all shrink-0 elegant-glow">+</button>
+                    <button onclick="deleteCurrentContext()" class="flex items-center justify-center w-8 h-8 text-gray-500 dark:text-[#ff453a] bg-gray-100 hover:bg-red-50 dark:bg-[#23252d] dark:hover:bg-[#321c1e] border border-transparent dark:border-transparent rounded-full text-lg font-light transition-all shrink-0 elegant-glow">×</button>
                 </div>
             </div>
 
-            <div class="flex items-center justify-between w-full sm:w-auto gap-2">
-                <div class="flex items-center gap-1 flex-1 sm:flex-none">
-                    <select id="model-select" class="custom-select text-[11px] font-semibold border border-transparent hover:border-gray-200 rounded-md bg-transparent hover:bg-gray-50 outline-none text-blue-600 cursor-pointer py-1 pl-1 pr-6 transition-all w-[100px] sm:w-[160px] truncate"></select>
+            <div class="flex items-center justify-between w-full gap-2">
+                <div class="flex items-center gap-1 flex-1">
+                    <select id="model-select" class="custom-select text-[11px] font-semibold border border-transparent dark:border-transparent rounded-full bg-transparent dark:bg-[#23252d] outline-none text-gray-700 dark:text-gray-300 cursor-pointer py-2 pl-3 pr-8 transition-all w-full max-w-[180px] sm:max-w-[250px] truncate elegant-glow"></select>
                 </div>
                 
                 <div class="flex gap-2 items-center">
-                    <button id="tts-toggle" onclick="toggleTTS()" class="p-1.5 text-gray-400 rounded-full border border-transparent transition-all" title="Toggle Voice Response">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <button id="tts-toggle" onclick="toggleTTS()" class="p-2 text-gray-500 dark:text-white bg-transparent dark:bg-[#23252d] hover:bg-gray-100 dark:hover:bg-white/10 rounded-full border border-transparent dark:border-transparent transition-all elegant-glow">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
                         </svg>
                     </button>
-                    <button onclick="toggleDocs()" class="text-xs sm:text-sm font-medium border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-all shadow-sm">Memory</button>
-                    <button onclick="clearChat()" class="text-xs sm:text-sm font-medium border border-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all shadow-sm">Reset</button>
+                    
+                    <button onclick="toggleDarkMode()" class="p-2 text-gray-500 dark:text-white bg-transparent dark:bg-[#23252d] hover:bg-gray-100 dark:hover:bg-white/10 rounded-full border border-transparent dark:border-transparent transition-all elegant-glow">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 dark:hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 hidden dark:block" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </button>
+
+                    <button onclick="toggleDocs()" class="text-xs sm:text-sm font-bold bg-gray-900 dark:bg-white/10 text-white px-5 py-2 rounded-full transition-all flex items-center gap-2 hover:bg-gray-800 dark:hover:bg-white/20 shadow-lg shadow-gray-900/20 dark:shadow-none elegant-glow">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                        Memory
+                    </button>
                 </div>
             </div>
         </header>
 
-        <div id="docs-panel" class="hidden absolute inset-0 z-50 bg-white flex flex-col overflow-hidden">
-            <div class="flex justify-between items-center p-4 border-b">
-                <h2 class="text-sm font-bold uppercase tracking-widest text-gray-500">Context Memory</h2>
-                <button onclick="toggleDocs()" class="text-gray-400 hover:text-gray-600 text-2xl px-2">×</button>
+        <div id="docs-panel" class="hidden absolute inset-0 z-50 bg-white/90 dark:bg-[#0d0e12]/85 backdrop-blur-3xl flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center p-5 border-b border-gray-200 dark:border-white/5">
+                <h2 class="text-base font-bold text-gray-900 dark:text-white">Context Memory</h2>
+                <button onclick="toggleDocs()" class="flex items-center justify-center w-8 h-8 bg-gray-100 dark:bg-[#23252d] text-gray-500 dark:text-white rounded-full hover:bg-gray-200 dark:hover:bg-white/10 transition-all elegant-glow">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
             
             <div class="flex-1 overflow-y-auto p-4 sm:p-6">
-                <section class="mb-6">
-                    <h3 class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Enrich Knowledge Base</h3>
-                    <textarea id="doc-input" class="w-full p-3 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" rows="3" placeholder="Paste text..."></textarea>
-                    <button onclick="addDoc()" class="w-full mt-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm transition-all">Extract Facts</button>
+                <section class="mb-8">
+                    <h3 class="text-xs font-bold uppercase text-gray-500 dark:text-[#8e8e93] mb-3 tracking-wider pl-1">Enrich Knowledge Base</h3>
+                    <textarea id="doc-input" class="w-full p-4 rounded-3xl border border-gray-200 dark:border-transparent text-sm outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/20 bg-gray-50 dark:bg-[#1a1c23] dark:text-white transition-all resize-none elegant-glow" rows="3" placeholder="Paste text..."></textarea>
+                    <button onclick="addDoc()" class="w-full mt-3 bg-gray-900 dark:bg-white/10 text-white px-4 py-3.5 rounded-full text-sm font-bold hover:bg-gray-800 dark:hover:bg-white/20 transition-all elegant-glow">Extract Facts</button>
                 </section>
                 
                 <section>
-                    <div class="flex justify-between items-center mb-3 gap-4">
-                        <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-widest whitespace-nowrap">Saved Facts</h3>
-                        <input type="text" id="search-docs" onkeyup="filterDocs()" placeholder="Search entire database..." class="w-full p-2 text-xs border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-inner">
+                    <div class="flex justify-between items-center mb-4 gap-4 pl-1">
+                        <h3 class="text-xs font-bold uppercase text-gray-500 dark:text-[#8e8e93] tracking-wider whitespace-nowrap">Saved Facts</h3>
+                        <input type="text" id="search-docs" onkeyup="filterDocs()" placeholder="Search entire database..." class="w-full p-2.5 px-4 text-xs border border-gray-200 dark:border-transparent rounded-full outline-none focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/20 bg-gray-50 dark:bg-[#1a1c23] dark:text-white transition-all elegant-glow">
                     </div>
-                    <div id="docs-list" class="space-y-2 mb-4"></div>
+                    <div id="docs-list" class="space-y-3 mb-4"></div>
                 </section>
             </div>
 
-            <div class="border-t p-4 bg-gray-50 flex justify-between items-center">
-                <button id="prev-btn" onclick="prevPage()" class="text-xs font-bold text-blue-600 disabled:text-gray-300">← Newer</button>
-                <span class="text-[10px] text-gray-400 font-mono">PAGE <input type="number" id="page-input" class="w-10 text-center border-none bg-transparent font-bold"></span>
-                <button id="next-btn" onclick="nextPage()" class="text-xs font-bold text-blue-600 disabled:text-gray-300">Older →</button>
+            <div class="border-t border-gray-200 dark:border-white/5 p-4 bg-white/50 dark:bg-transparent flex justify-between items-center">
+                <button id="prev-btn" onclick="prevPage()" class="text-sm font-semibold text-gray-900 dark:text-white disabled:text-gray-400 dark:disabled:text-[#48484a] px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#23252d] rounded-full transition-all">← Newer</button>
+                <span class="text-xs text-gray-500 dark:text-[#8e8e93] font-mono font-medium">PAGE <input type="number" id="page-input" class="w-10 text-center border-none bg-transparent dark:text-white font-bold outline-none"></span>
+                <button id="next-btn" onclick="nextPage()" class="text-sm font-semibold text-gray-900 dark:text-white disabled:text-gray-400 dark:disabled:text-[#48484a] px-4 py-2 hover:bg-gray-100 dark:hover:bg-[#23252d] rounded-full transition-all">Older →</button>
             </div>
         </div>
 
         <main id="note-content" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 z-0">
-            <div class="text-center text-gray-400 mt-20 font-light italic" id="welcome-msg">Loading...</div>
+            <div class="text-center text-gray-500 dark:text-[#8e8e93] mt-20 font-medium" id="welcome-msg">Loading...</div>
         </main>
 
-        <footer class="shrink-0 p-3 sm:p-4 border-t bg-white z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <footer class="shrink-0 p-4 border-t border-gray-200 dark:border-white/5 bg-white/80 dark:bg-[#2c2c2e]/80 backdrop-blur-3xl z-10 pb-8 sm:pb-4">
             <div class="flex gap-2 sm:gap-3">
                 <div class="relative flex-1">
                     <input type="text" id="query-input" 
-                        class="w-full p-3 sm:p-3.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-inner pr-10 sm:pr-12" 
+                        class="w-full p-4 pl-5 bg-gray-100 dark:bg-[#23252d] border border-transparent dark:border-transparent rounded-full outline-none text-sm focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/20 dark:text-white transition-all pr-12 elegant-glow" 
                         placeholder="Ask or talk...">
-                    <button id="mic-btn" onclick="toggleMic()" class="absolute right-2 top-2 sm:right-3 sm:top-2.5 p-1 text-gray-400 hover:text-red-500 transition-all">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <button id="mic-btn" onclick="toggleMic()" class="absolute right-2 top-2 sm:right-2.5 sm:top-2.5 p-1.5 text-gray-500 dark:text-[#8e8e93] hover:text-[#ff3b30] dark:hover:text-[#ff453a] transition-all rounded-full hover:bg-gray-200 dark:hover:bg-[#343743]">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                         </svg>
                     </button>
                 </div>
-                <button onclick="sendQuery()" class="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-xl font-bold text-sm sm:text-base hover:bg-blue-700 transition-all">Analyze</button>
+                <button onclick="sendQuery()" class="bg-gray-900 dark:bg-white/10 text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-gray-800 dark:hover:bg-white/20 transition-all shadow-lg shadow-gray-900/20 dark:shadow-none elegant-glow">Analyze</button>
             </div>
         </footer>
     </div>
+
+    <div id="auth-modal" class="fixed inset-0 z-[100] bg-white/80 dark:bg-[#0d0e12]/90 backdrop-blur-2xl flex items-center justify-center p-6 transition-all duration-300">
+        <div class="w-full max-w-sm bg-white dark:bg-[#1c1c1e] p-8 rounded-[32px] shadow-2xl border border-gray-100 dark:border-white/5 elegant-glow text-center">
+            <h2 class="text-2xl font-bold mb-2 dark:text-white">Context Notes</h2>
+            <p class="text-sm text-gray-500 dark:text-[#8e8e93] mb-8">Enter your credentials to access your notes.</p>
+            
+            <div class="space-y-4">
+                <input type="text" id="auth-user" placeholder="Username" 
+                    class="w-full p-4 bg-gray-100 dark:bg-[#23252d] border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all">
+                
+                <input type="password" id="auth-pass" placeholder="Password" 
+                    class="w-full p-4 bg-gray-100 dark:bg-[#23252d] border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all">
+                
+                <button onclick="handleAuthAction()" 
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all transform active:scale-95">
+                    Access Notes
+                </button>
+            </div>
+            <p class="mt-6 text-[10px] text-gray-400 uppercase tracking-widest">New users will be registered automatically.</p>
+        </div>
+    </div>
+
     <script src="/static/script.js"></script>
 </body>
 </html>

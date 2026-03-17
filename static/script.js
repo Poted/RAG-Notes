@@ -1,6 +1,5 @@
 const noteContent = document.getElementById('note-content');
 const contextSelect = document.getElementById('context-select');
-const sessionId = "default_user";
 
 let isTtsEnabled = false;
 let recognition;
@@ -13,12 +12,118 @@ const limit = 10;
 let currentSearch = "";
 let searchTimeout;
 
+// Nowoczesna paleta kolorów (iOS Vibrant)
+const chartColors = [
+    '#ff3b30', // Red
+    '#ff9500', // Orange
+    '#ffcc00', // Yellow
+    '#34c759', // Green
+    '#007aff', // Blue
+    '#5856d6', // Indigo
+    '#af52de', // Purple
+    '#ff2d55', // Pink
+    '#a2845e'  // Brown
+];
+
+const sessionId = localStorage.getItem('chat_session_id') || Math.random().toString(36).substring(2, 15);
+localStorage.setItem('chat_session_id', sessionId);
+
+let authHeader = localStorage.getItem('auth_data');
+
+async function apiFetch(url, options = {}) {
+    if (authHeader) {
+        options.headers = {
+            ...options.headers,
+            'Authorization': 'Basic ' + authHeader
+        };
+    }
+    const resp = await fetch(url, options);
+    if (resp.status === 401) {
+        localStorage.removeItem('auth_data');
+        authHeader = null;
+        document.getElementById('auth-modal').classList.remove('hidden');
+    }
+    return resp;
+}
+
+async function handleAuthAction() {
+    const user = document.getElementById('auth-user').value;
+    const pass = document.getElementById('auth-pass').value;
+    try {
+        const resp = await fetch('/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: user, password: pass })
+        });
+        if (resp.ok) {
+            authHeader = btoa(user + ":" + pass);
+            localStorage.setItem('auth_data', authHeader);
+            document.getElementById('auth-modal').classList.add('hidden');
+            await initApp();
+        } else {
+            const data = await resp.json();
+            alert(data.detail || "Authentication failed.");
+        }
+    } catch (err) {
+        alert("Server error.");
+    }
+}
+
+async function checkAuth() {
+    if (!authHeader) return false;
+    try {
+        const resp = await apiFetch('/models');
+        if (resp.ok) {
+            document.getElementById('auth-modal').classList.add('hidden');
+            return true;
+        }
+    } catch (e) {}
+    document.getElementById('auth-modal').classList.remove('hidden');
+    return false;
+}
+
+function toggleDarkMode() {
+    document.documentElement.classList.toggle('dark');
+    const isDark = document.documentElement.classList.contains('dark');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.color = isDark ? '#e5e5ea' : '#1d1d1f';
+        Chart.defaults.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+        
+        // Usunięto sztywne nadpisywanie kolorów słupków, aby pozwolić na różnorodność
+
+        for (let id in Chart.instances) {
+            Chart.instances[id].update();
+        }
+    }
+}
+
+function initDarkMode() {
+    const savedTheme = localStorage.getItem('theme');
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = savedTheme === 'dark' || (!savedTheme && systemPrefersDark);
+    
+    if (isDark) document.documentElement.classList.add('dark');
+    
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.color = isDark ? '#e5e5ea' : '#1d1d1f';
+        Chart.defaults.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+    }
+}
+
+document.getElementById('auth-pass').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleAuthAction();
+});
+
+document.getElementById('auth-user').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('auth-pass').focus();
+});
+
 function populateVoices() {
     availableVoices = synth.getVoices().filter(v => v.lang.includes('pl'));
     availableVoices.forEach((voice, index) => {
-        if (voice.name.toLowerCase().includes('google')) {
-            preferredVoiceIndex = index;
-        }
+        if (voice.name.toLowerCase().includes('google')) preferredVoiceIndex = index;
     });
 }
 
@@ -55,27 +160,32 @@ function speak(text) {
     synth.cancel();
     const utterance = new SpeechSynthesisUtterance(text.replace(/\[CHART\][\s\S]*?\[\/CHART\]/g, '').replace(/[#*`]/g, ''));
     utterance.lang = 'pl-PL';
-    if (availableVoices.length > 0) {
-        utterance.voice = availableVoices[preferredVoiceIndex];
-    }
+    if (availableVoices.length > 0) utterance.voice = availableVoices[preferredVoiceIndex];
     synth.speak(utterance);
 }
 
 async function fetchContexts() {
-    const resp = await fetch('/contexts');
-    const data = await resp.json();
-    const current = contextSelect.value;
-    contextSelect.innerHTML = '';
-    data.contexts.forEach(ctx => {
-        const opt = document.createElement('option');
-        opt.value = ctx; opt.innerText = ctx;
-        contextSelect.appendChild(opt);
-    });
-    if (data.contexts.includes(current)) contextSelect.value = current;
+    try {
+        const resp = await apiFetch('/contexts');
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const current = contextSelect.value;
+        contextSelect.innerHTML = '';
+        if (data.contexts) {
+            data.contexts.forEach(ctx => {
+                const opt = document.createElement('option');
+                opt.value = ctx; opt.innerText = ctx;
+                contextSelect.appendChild(opt);
+            });
+        }
+        if (data.contexts && data.contexts.includes(current)) contextSelect.value = current;
+    } catch (err) {
+        console.error("Error loading contexts.", err);
+    }
 }
 
 async function createContextAPI(name) {
-    await fetch('/contexts', {
+    await apiFetch('/contexts', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({name: name})
@@ -95,23 +205,33 @@ async function createNewContext() {
 async function deleteCurrentContext() {
     const ctx = contextSelect.value;
     if (ctx && confirm(`Delete ${ctx}?`)) {
-        await fetch(`/contexts/${ctx}`, { method: 'DELETE' });
+        await apiFetch(`/contexts/${ctx}`, { method: 'DELETE' });
         location.reload();
     }
 }
 
 async function initApp() {
+    const isAuthenticated = await checkAuth();
+    if (!isAuthenticated) {
+        document.getElementById('welcome-msg').innerText = "Please log in to continue.";
+        return;
+    }
     populateVoices();
     await fetchModels();
     await fetchContexts();
-    if (contextSelect.options.length === 0) { await createContextAPI("general"); await fetchContexts(); }
+    if (contextSelect.options.length === 0) { 
+        await createContextAPI("general"); 
+        await fetchContexts(); 
+    }
     loadHistory();
 }
 
 async function fetchModels() {
-    const resp = await fetch('/models');
+    const resp = await apiFetch('/models');
+    if (!resp.ok) return;
     const data = await resp.json();
     const sel = document.getElementById('model-select');
+    sel.innerHTML = '';
     data.models.forEach(m => {
         const opt = document.createElement('option');
         opt.value = m; opt.innerText = m.replace('models/', '');
@@ -123,7 +243,8 @@ async function fetchModels() {
 async function loadHistory() {
     const ctx = contextSelect.value;
     if (!ctx) return;
-    const resp = await fetch(`/history?session_id=${sessionId}&context_name=${ctx}`);
+    const resp = await apiFetch(`/history?session_id=${sessionId}&context_name=${ctx}`);
+    if (!resp.ok) return;
     const data = await resp.json();
     noteContent.innerHTML = '';
     if (data.history && data.history.length > 0) {
@@ -152,26 +273,60 @@ function renderMarkdownWithCharts(text, container) {
     container.innerHTML = "";
     const chartRegex = /\[CHART\]([\s\S]*?)\[\/CHART\]/g;
     let lastIndex = 0; let match;
+    const isDark = document.documentElement.classList.contains('dark');
+
     while ((match = chartRegex.exec(text)) !== null) {
         const before = text.substring(lastIndex, match.index);
         if (before.trim()) {
-            const d = document.createElement('div'); d.innerHTML = marked.parse(before);
+            const d = document.createElement('div');
+            d.innerHTML = marked.parse(before);
             container.appendChild(d);
         }
+
         const can = document.createElement('div');
-        can.className = "my-6 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-100 h-[250px] sm:h-[300px] relative w-full";
-        const c = document.createElement('canvas'); can.appendChild(c);
+        can.className = "chart-container my-6 p-3 sm:p-4 bg-gray-50 dark:bg-[#1a1c23] rounded-xl relative w-full h-[300px]";
+        const c = document.createElement('canvas');
+        can.appendChild(c);
         container.appendChild(can);
+
         try {
             const cfg = JSON.parse(match[1].trim());
-            cfg.options = cfg.options || {}; cfg.options.maintainAspectRatio = false;
+            cfg.options = cfg.options || {};
+            cfg.options.maintainAspectRatio = false;
+
+            // Logika kolorowania
+            cfg.data.datasets.forEach((ds) => {
+                const type = cfg.type.toLowerCase();
+                
+                // Jeśli to kołowy/pączek - wymuś całą paletę kolorów
+                if (type === 'pie' || type === 'doughnut') {
+                    ds.backgroundColor = chartColors;
+                    ds.borderColor = isDark ? '#1c1c1e' : '#ffffff';
+                    ds.borderWidth = 2;
+                } 
+                // Jeśli to słupki/linie - użyj kolorów, jeśli model wysłał szary lub nic
+                else {
+                    if (!ds.backgroundColor || ds.backgroundColor === '#007aff' || ds.backgroundColor === '#ccc') {
+                        // Jeśli jest wiele danych w jednym zestawie, daj tablicę kolorów
+                        if (ds.data.length > 1) {
+                            ds.backgroundColor = chartColors.slice(0, ds.data.length);
+                        } else {
+                            ds.backgroundColor = chartColors[0];
+                        }
+                    }
+                }
+            });
+
             new Chart(c, cfg);
-        } catch (e) {}
+        } catch (e) {
+            console.error("Chart error:", e);
+        }
         lastIndex = chartRegex.lastIndex;
     }
     const rem = text.substring(lastIndex);
     if (rem.trim()) {
-        const d = document.createElement('div'); d.innerHTML = marked.parse(rem);
+        const d = document.createElement('div');
+        d.innerHTML = marked.parse(rem);
         container.appendChild(d);
     }
 }
@@ -188,9 +343,8 @@ async function sendQuery() {
     u.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 pt-2">Question</h4><p class="text-[15px] sm:text-base font-medium text-gray-900 pb-2">${q}</p>`;
     noteContent.appendChild(u);
     noteContent.scrollTop = noteContent.scrollHeight;
-    
     try {
-        const resp = await fetch('/query', {
+        const resp = await apiFetch('/query', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({question: q, session_id: sessionId, context_name: ctx, model_name: model})
@@ -214,22 +368,18 @@ async function addDoc() {
     const text = document.getElementById('doc-input').value;
     const model = document.getElementById('model-select').value;
     if(!text || !ctx || !model) return;
-    
     btn.disabled = true;
     btn.textContent = "Processing...";
-    
     try {
-        const resp = await fetch('/add_document', {
+        const resp = await apiFetch('/add_document', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({text: text, context_name: ctx, model_name: model})
         });
-        
         if (!resp.ok) {
             const errData = await resp.json();
             throw new Error(errData.detail || "API Error");
         }
-        
         document.getElementById('doc-input').value = '';
         currentOffset = 0;
         loadDocs();
@@ -245,20 +395,18 @@ async function loadDocs() {
     const ctx = contextSelect.value;
     if (!ctx) return;
     const url = `/documents?context_name=${ctx}&limit=${limit}&offset=${currentOffset}${currentSearch ? '&search=' + encodeURIComponent(currentSearch) : ''}`;
-    const resp = await fetch(url);
+    const resp = await apiFetch(url);
+    if (!resp.ok) return;
     const data = await resp.json();
     const list = document.getElementById('docs-list');
-    
     list.innerHTML = data.documents.length ? data.documents.map(d => `
         <div class="flex justify-between items-start gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm text-[13px] leading-snug hover:bg-gray-50 transition-colors">
             <span class="flex-1 text-gray-700">${d.content}</span>
             <button onclick="deleteDoc('${d.id}')" class="text-gray-300 hover:text-red-500 px-2 text-lg font-light transition-colors">×</button>
         </div>
     `).join('') : '<p class="text-xs text-gray-400 italic text-center py-4">No results found.</p>';
-
     document.getElementById('prev-btn').disabled = currentOffset === 0;
     document.getElementById('next-btn').disabled = data.documents.length < limit || (currentOffset + limit >= data.total);
-    
     const pageNum = Math.floor(currentOffset / limit) + 1;
     document.getElementById('page-input').value = pageNum;
 }
@@ -294,7 +442,7 @@ function goToPage() {
 
 async function deleteDoc(id) {
     const ctx = contextSelect.value;
-    await fetch(`/documents?context_name=${ctx}&doc_id=${id}`, { method: 'DELETE' });
+    await apiFetch(`/documents?context_name=${ctx}&doc_id=${id}`, { method: 'DELETE' });
     loadDocs();
 }
 
@@ -312,14 +460,12 @@ function toggleDocs() {
 function changeContext() { 
     currentOffset = 0;
     loadHistory(); 
-    if(!document.getElementById('docs-panel').classList.contains('hidden')) {
-        loadDocs();
-    }
+    if(!document.getElementById('docs-panel').classList.contains('hidden')) loadDocs();
 }
 
 async function clearChat() {
     const ctx = contextSelect.value;
-    await fetch(`/session/${sessionId}?context_name=${ctx}`, { method: 'DELETE' });
+    await apiFetch(`/session/${sessionId}?context_name=${ctx}`, { method: 'DELETE' });
     loadHistory();
 }
 
