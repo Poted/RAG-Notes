@@ -1,0 +1,13 @@
+services:
+  context-notes:
+    build: .
+    container_name: context-notes-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    env_file:
+      - .env
+    environment:
+      - DATA_DIR=/data
+    restart: unless-stopped

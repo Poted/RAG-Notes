@@ -1,0 +1,36 @@
+.prose p { margin-bottom: 0.75rem; }
+.prose h1, .prose h2 { font-weight: bold; margin-top: 1.2rem; margin-bottom: 0.5rem; }
+.prose ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 1rem; }
+
+.custom-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.2em 1.2em;
+}
+
+@keyframes mic-pulse {
+    0% { transform: scale(1); color: #ef4444; opacity: 1; }
+    50% { transform: scale(1.2); color: #b91c1c; opacity: 0.7; }
+    100% { transform: scale(1); color: #ef4444; opacity: 1; }
+}
+
+.mic-active { 
+    animation: mic-pulse 1.5s infinite; 
+}
+
+.tts-active {
+    background-color: #eff6ff;
+    color: #0ea5e9;
+    border-color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+}
+
+#docs-panel {
+    transition: opacity 0.2s ease-in-out;
+}
+
+#docs-list > div {
+    word-break: break-word;
+}

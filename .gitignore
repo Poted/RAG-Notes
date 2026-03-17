@@ -7,6 +7,7 @@ env/
 .venv/
 chroma_db/
 chat_history.db
+data/
 .DS_Store
 .vscode/
 .idea/

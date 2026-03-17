@@ -1,7 +1,7 @@
 fastapi
 uvicorn
-google-genai
+pydantic
+python-dotenv
 chromadb
 sentence-transformers
-python-dotenv
-pydantic
+google-genai

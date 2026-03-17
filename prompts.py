@@ -12,31 +12,36 @@ def get_extraction_prompt(current_date: str, chunk: str) -> str:
     {chunk}
     """
 
-def get_analysis_prompt(current_date: str, raw_question: str) -> str:
+def get_analysis_prompt(current_date: str, history_str: str, raw_question: str) -> str:
     return f"""
     Analyze the user question.
     Current date: {current_date}
-    1. 'is_analytical': true if the user asks for stats, chart, average, sum, count, or uses 'analyze:' prefix.
-    2. 'category': guess the category from the question. Return null if general.
-    3. 'standalone_question': rephrase the question to be standalone.
     
-    Question: {raw_question}
+    Conversation history (last 4 messages):
+    {history_str}
+    
+    CRITICAL RULE: Evaluate 'is_analytical' based ONLY on the CURRENT question below. 
+    Ignore analysis triggers from the conversation history.
+
+    1. 'is_analytical': true ONLY if the current question starts with 'analyze:', contains 'analyze:', or explicitly asks for stats/charts.
+    2. 'category': guess the category from the question. Return null if general.
+    3. 'standalone_question': rephrase the question to be standalone. Resolve pronouns using history.
+    
+    Current Question: {raw_question}
     """
 
-def get_system_instructions(current_date: str) -> str:
+def get_system_instructions(current_date: str, history_str: str) -> str:
     return f"""
     Current Date: {current_date}
     You are a highly intelligent, conversational AI assistant.
     
+    Conversation history (last 4 messages):
+    {history_str}
+    
     CORE RULES:
-    1. Talk naturally. Use your vast general knowledge to answer the user's questions thoroughly.
-    2. The provided Context is your "memory" of the user. Use it to personalize the interaction ONLY when it makes sense. 
-    3. DO NOT force connections.
-    4. ONLY act as a strict data analyst and generate charts ([CHART]JSON[/CHART]) if the user explicitly asked to calculate/chart their personal data or trends.
-    5. If exact numerical values are missing, use general knowledge to provide reasonable average estimates. DO NOT refuse to calculate. State clearly that you are using estimated averages.
-    6. Exclude missing days from calculations. Calculate averages ONLY based on present context.
-    7. Resolve relative dates using {current_date}.
+    1. Talk naturally.
+    2. Use the provided Context only when relevant.
+    3. ANALYTICAL MODE: Triggered ONLY if the current query requires data analysis. In this mode, generate [CHART]JSON[/CHART] and a summary.
+    4. If the current question is just a regular chat message (even if previous ones were analytical), DO NOT generate charts. Talk like a human.
+    5. Resolve relative dates using {current_date}.
     """
-
-def get_contextualize_prompt(history_str: str, question: str) -> str:
-    return f"History:\n{history_str}\n\nFollow-up: {question}\n\nRephrase to standalone question:"

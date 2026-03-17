@@ -2,351 +2,95 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RAG Agent</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Context Notes</title>
     <link rel="icon" type="image/png" href="/static/icon.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <style>
-        .prose h1, .prose h2 { font-weight: bold; margin-top: 1rem; }
-        .prose ul { list-style-type: disc; margin-left: 1.2rem; }
-        .note-container { height: calc(100vh - 140px); }
-    </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="bg-gray-50 text-gray-900" onload="initApp()">
-    <div class="max-w-2xl mx-auto min-h-screen flex flex-col bg-white shadow-sm">
-        <header class="border-b p-4 flex justify-between items-center bg-white sticky top-0 z-10">
-            <div class="flex flex-col gap-2">
+<body class="bg-gray-50 text-gray-900 h-[100dvh] overflow-hidden" onload="initApp()">
+    <div class="max-w-3xl mx-auto h-full flex flex-col bg-white shadow-md relative">
+        
+        <header class="shrink-0 border-b px-4 py-3 bg-white flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-3 z-30">
+            <div class="flex items-center justify-between w-full sm:w-auto gap-3">
                 <div class="flex items-center gap-3">
-                    <h1 class="text-lg font-semibold tracking-tight">RAG Agent</h1>
-                    <div class="flex items-center gap-1 border-l pl-3 ml-1">
-                        <select id="context-select" onchange="changeContext()" class="text-[10px] border border-gray-200 rounded outline-none focus:ring-1 focus:ring-blue-500 bg-gray-50 py-1 pl-2 pr-4 cursor-pointer max-w-[100px]"></select>
-                        <button onclick="createNewContext()" class="text-gray-400 hover:text-blue-600 px-1 text-lg font-light">+</button>
-                        <button onclick="deleteCurrentContext()" class="text-gray-400 hover:text-red-600 px-1 text-lg font-light">×</button>
+                    <h1 class="text-xl font-bold tracking-tight text-gray-800">Context Notes</h1>
+                    <div class="flex items-center gap-1 border-l pl-3 border-gray-200">
+                        <select id="context-select" onchange="changeContext()" class="custom-select text-xs font-medium border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-blue-500 bg-white py-1.5 pl-2 pr-7 shadow-sm cursor-pointer w-[110px] sm:w-[130px] truncate"></select>
+                        <button onclick="createNewContext()" class="text-gray-400 hover:text-blue-600 px-2 py-1 bg-gray-50 hover:bg-blue-50 rounded-md text-lg font-light transition-all">+</button>
+                        <button onclick="deleteCurrentContext()" class="text-gray-400 hover:text-red-600 px-2 py-1 bg-gray-50 hover:bg-red-50 rounded-md text-lg font-light transition-all">×</button>
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-[9px] text-gray-400 uppercase font-bold tracking-tighter">Model:</span>
-                    <select id="model-select" class="text-[10px] border-none bg-transparent outline-none text-blue-600 cursor-pointer font-medium"></select>
-                </div>
             </div>
-            <div class="flex gap-2">
-                <button onclick="toggleDocs()" class="text-sm border px-3 py-1 rounded hover:bg-gray-50">Memory</button>
-                <button onclick="clearChat()" class="text-sm border border-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-50">Reset</button>
+
+            <div class="flex items-center justify-between w-full sm:w-auto gap-2">
+                <div class="flex items-center gap-1 flex-1 sm:flex-none">
+                    <select id="model-select" class="custom-select text-[11px] font-semibold border border-transparent hover:border-gray-200 rounded-md bg-transparent hover:bg-gray-50 outline-none text-blue-600 cursor-pointer py-1 pl-1 pr-6 transition-all w-[100px] sm:w-[160px] truncate"></select>
+                </div>
+                
+                <div class="flex gap-2 items-center">
+                    <button id="tts-toggle" onclick="toggleTTS()" class="p-1.5 text-gray-400 rounded-full border border-transparent transition-all" title="Toggle Voice Response">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                        </svg>
+                    </button>
+                    <button onclick="toggleDocs()" class="text-xs sm:text-sm font-medium border border-gray-200 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-50 transition-all shadow-sm">Memory</button>
+                    <button onclick="clearChat()" class="text-xs sm:text-sm font-medium border border-red-100 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all shadow-sm">Reset</button>
+                </div>
             </div>
         </header>
 
-        <div id="docs-panel" class="hidden p-6 bg-gray-50 border-b overflow-y-auto max-h-[65vh]">
-            <section class="mb-8">
-                <h3 class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Enrich Knowledge Base</h3>
-                <textarea id="doc-input" class="w-full p-3 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Paste text to analyze..."></textarea>
-                <button onclick="addDoc()" class="w-full mt-3 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition">Extract and Save Facts</button>
-            </section>
+        <div id="docs-panel" class="hidden absolute inset-0 z-50 bg-white flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h2 class="text-sm font-bold uppercase tracking-widest text-gray-500">Context Memory</h2>
+                <button onclick="toggleDocs()" class="text-gray-400 hover:text-gray-600 text-2xl px-2">×</button>
+            </div>
             
-            <section>
-                <div class="flex justify-between items-center mb-3 gap-4">
-                    <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-widest whitespace-nowrap">Saved Facts</h3>
-                    <input type="text" id="search-docs" onkeyup="filterDocs()" placeholder="Search entire database..." class="w-full p-2 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 bg-white">
-                </div>
-                <div id="docs-list" class="space-y-2 mb-4"></div>
-                <div class="flex justify-between items-center border-t border-gray-100 pt-2">
-                    <button id="prev-btn" onclick="prevPage()" class="text-xs font-medium text-blue-600 disabled:text-gray-300 px-2 py-1">← Newer</button>
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] text-gray-400 font-mono">PAGE</span>
-                        <input type="number" id="page-input" onchange="goToPage()" class="w-12 p-1 text-center text-xs border border-gray-200 rounded outline-none" min="1">
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6">
+                <section class="mb-6">
+                    <h3 class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Enrich Knowledge Base</h3>
+                    <textarea id="doc-input" class="w-full p-3 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white" rows="3" placeholder="Paste text..."></textarea>
+                    <button onclick="addDoc()" class="w-full mt-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-sm transition-all">Extract Facts</button>
+                </section>
+                
+                <section>
+                    <div class="flex justify-between items-center mb-3 gap-4">
+                        <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-widest whitespace-nowrap">Saved Facts</h3>
+                        <input type="text" id="search-docs" onkeyup="filterDocs()" placeholder="Search entire database..." class="w-full p-2 text-xs border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-inner">
                     </div>
-                    <button id="next-btn" onclick="nextPage()" class="text-xs font-medium text-blue-600 disabled:text-gray-300 px-2 py-1">Older →</button>
-                </div>
-            </section>
+                    <div id="docs-list" class="space-y-2 mb-4"></div>
+                </section>
+            </div>
+
+            <div class="border-t p-4 bg-gray-50 flex justify-between items-center">
+                <button id="prev-btn" onclick="prevPage()" class="text-xs font-bold text-blue-600 disabled:text-gray-300">← Newer</button>
+                <span class="text-[10px] text-gray-400 font-mono">PAGE <input type="number" id="page-input" class="w-10 text-center border-none bg-transparent font-bold"></span>
+                <button id="next-btn" onclick="nextPage()" class="text-xs font-bold text-blue-600 disabled:text-gray-300">Older →</button>
+            </div>
         </div>
 
-        <main id="note-content" class="note-container overflow-y-auto p-6 space-y-8">
-            <div class="text-center text-gray-400 mt-20 font-light italic" id="welcome-msg">Loading workspaces...</div>
+        <main id="note-content" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 sm:space-y-8 z-0">
+            <div class="text-center text-gray-400 mt-20 font-light italic" id="welcome-msg">Loading...</div>
         </main>
 
-        <footer class="p-4 border-t bg-white">
-            <div class="flex gap-3">
-                <input type="text" id="query-input" 
-                    class="flex-1 p-3.5 bg-gray-100 rounded-xl outline-none text-sm" 
-                    placeholder="What do you want to ask?">
-                <button onclick="sendQuery()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700">Analyze</button>
+        <footer class="shrink-0 p-3 sm:p-4 border-t bg-white z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+            <div class="flex gap-2 sm:gap-3">
+                <div class="relative flex-1">
+                    <input type="text" id="query-input" 
+                        class="w-full p-3 sm:p-3.5 bg-gray-50 border border-gray-200 rounded-xl outline-none text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-inner pr-10 sm:pr-12" 
+                        placeholder="Ask or talk...">
+                    <button id="mic-btn" onclick="toggleMic()" class="absolute right-2 top-2 sm:right-3 sm:top-2.5 p-1 text-gray-400 hover:text-red-500 transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                        </svg>
+                    </button>
+                </div>
+                <button onclick="sendQuery()" class="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-xl font-bold text-sm sm:text-base hover:bg-blue-700 transition-all">Analyze</button>
             </div>
         </footer>
     </div>
-
-    <script>
-        const noteContent = document.getElementById('note-content');
-        const welcomeMsg = document.getElementById('welcome-msg');
-        const contextSelect = document.getElementById('context-select');
-        let sessionId = "session-" + Math.random().toString(36).substring(7);
-        
-        let currentOffset = 0;
-        const limit = 10;
-        let currentSearch = "";
-        let searchTimeout;
-
-        async function initApp() {
-            await fetchModels();
-            await fetchContexts();
-            if (contextSelect.options.length === 0) {
-                await createContextAPI("general");
-                await fetchContexts();
-            }
-            welcomeMsg.innerText = `Ask a question to search the '${contextSelect.value}' workspace...`;
-        }
-
-        async function fetchModels() {
-            const resp = await fetch('/models');
-            const data = await resp.json();
-            const modelSelect = document.getElementById('model-select');
-            data.models.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.innerText = m.replace('models/', '');
-                if(m.includes('flash')) opt.selected = true;
-                modelSelect.appendChild(opt);
-            });
-        }
-
-        async function fetchContexts() {
-            const resp = await fetch('/contexts');
-            const data = await resp.json();
-            const currentVal = contextSelect.value;
-            contextSelect.innerHTML = '';
-            
-            data.contexts.forEach(ctx => {
-                const opt = document.createElement('option');
-                opt.value = ctx;
-                opt.innerText = ctx;
-                contextSelect.appendChild(opt);
-            });
-
-            if (data.contexts.includes(currentVal)) {
-                contextSelect.value = currentVal;
-            }
-        }
-
-        async function createContextAPI(name) {
-            await fetch('/contexts', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({name: name})
-            });
-        }
-
-        async function createNewContext() {
-            const name = prompt("Enter new workspace name (alphanumeric, no spaces):");
-            if (!name) return;
-            const cleanName = name.replace(/[^a-zA-Z0-9_-]/g, "").toLowerCase();
-            if (cleanName.length < 3 || cleanName.length > 63) {
-                alert("Name must be 3-63 characters, letters and numbers only.");
-                return;
-            }
-            await createContextAPI(cleanName);
-            await fetchContexts();
-            contextSelect.value = cleanName;
-            changeContext();
-        }
-
-        async function deleteCurrentContext() {
-            const ctx = contextSelect.value;
-            if (!ctx) return;
-            if (confirm(`Are you sure you want to delete workspace '${ctx}' and all its memory?`)) {
-                await fetch(`/contexts/${ctx}`, { method: 'DELETE' });
-                await initApp();
-            }
-        }
-
-        function changeContext() {
-            clearChat();
-            welcomeMsg.innerText = `Ask a question to search the '${contextSelect.value}' workspace...`;
-            currentOffset = 0;
-            if(!document.getElementById('docs-panel').classList.contains('hidden')) {
-                loadDocs();
-            }
-        }
-
-        function renderMarkdownWithCharts(text, container) {
-            container.innerHTML = "";
-            const chartRegex = /\[CHART\]([\s\S]*?)\[\/CHART\]/g;
-            let lastIndex = 0;
-            let match;
-
-            while ((match = chartRegex.exec(text)) !== null) {
-                const textBefore = text.substring(lastIndex, match.index);
-                if (textBefore.trim()) {
-                    const textNode = document.createElement('div');
-                    textNode.innerHTML = marked.parse(textBefore);
-                    container.appendChild(textNode);
-                }
-
-                const canvasContainer = document.createElement('div');
-                canvasContainer.className = "my-6 p-4 bg-gray-50 rounded-xl shadow-sm";
-                canvasContainer.style.height = "300px";
-                canvasContainer.style.position = "relative";
-                
-                const canvas = document.createElement('canvas');
-                canvasContainer.appendChild(canvas);
-                container.appendChild(canvasContainer);
-
-                try {
-                    const cleanJson = match[1].trim();
-                    const config = JSON.parse(cleanJson);
-                    config.options = config.options || {};
-                    config.options.maintainAspectRatio = false;
-                    config.options.responsive = true;
-                    new Chart(canvas, config);
-                } catch (e) {
-                    console.error("Chart error:", e);
-                    canvasContainer.innerHTML = `<p class="text-red-500 text-xs">Error rendering chart</p>`;
-                }
-
-                lastIndex = chartRegex.lastIndex;
-            }
-
-            const remainingText = text.substring(lastIndex);
-            if (remainingText.trim()) {
-                const textNode = document.createElement('div');
-                textNode.innerHTML = marked.parse(remainingText);
-                container.appendChild(textNode);
-            }
-        }
-
-        async function toggleDocs() {
-            const panel = document.getElementById('docs-panel');
-            panel.classList.toggle('hidden');
-            if(!panel.classList.contains('hidden')) {
-                currentOffset = 0;
-                document.getElementById('search-docs').value = "";
-                currentSearch = "";
-                loadDocs();
-            }
-        }
-
-        async function loadDocs() {
-            const ctx = contextSelect.value;
-            if (!ctx) return;
-            const url = `/documents?context_name=${ctx}&limit=${limit}&offset=${currentOffset}${currentSearch ? '&search=' + encodeURIComponent(currentSearch) : ''}`;
-            const resp = await fetch(url);
-            const data = await resp.json();
-            const list = document.getElementById('docs-list');
-            
-            list.innerHTML = data.documents.length ? data.documents.map(d => `
-                <div class="flex justify-between items-start gap-3 p-3 bg-white rounded-lg border border-gray-100 shadow-sm text-[13px] leading-snug">
-                    <span class="flex-1 text-gray-700">${d.content}</span>
-                    <button onclick="deleteDoc('${d.id}')" class="text-red-400 hover:text-red-600 px-1 text-lg font-light">×</button>
-                </div>
-            `).join('') : '<p class="text-xs text-gray-400 italic">No results found.</p>';
-
-            document.getElementById('prev-btn').disabled = currentOffset === 0;
-            document.getElementById('next-btn').disabled = data.documents.length < limit || (currentOffset + limit >= data.total);
-            
-            const pageNum = Math.floor(currentOffset / limit) + 1;
-            document.getElementById('page-input').value = pageNum;
-        }
-
-        function filterDocs() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                currentSearch = document.getElementById('search-docs').value;
-                currentOffset = 0;
-                loadDocs();
-            }, 400);
-        }
-
-        function prevPage() {
-            if (currentOffset >= limit) {
-                currentOffset -= limit;
-                loadDocs();
-            }
-        }
-
-        function nextPage() {
-            currentOffset += limit;
-            loadDocs();
-        }
-
-        function goToPage() {
-            const page = parseInt(document.getElementById('page-input').value);
-            if (page > 0) {
-                currentOffset = (page - 1) * limit;
-                loadDocs();
-            }
-        }
-
-        async function deleteDoc(id) {
-            const ctx = contextSelect.value;
-            await fetch(`/documents?context_name=${ctx}&doc_id=${id}`, { method: 'DELETE' });
-            loadDocs();
-        }
-
-        async function clearChat() {
-            await fetch(`/session/${sessionId}`, { method: 'DELETE' });
-            sessionId = "session-" + Math.random().toString(36).substring(7);
-            noteContent.innerHTML = `<div class="text-center text-gray-400 mt-20 font-light italic" id="welcome-msg">Ask a question to search the '${contextSelect.value}' workspace...</div>`;
-        }
-
-        async function addDoc() {
-            const ctx = contextSelect.value;
-            const btn = event.target;
-            const text = document.getElementById('doc-input').value;
-            if(!text || !ctx) return;
-            
-            btn.disabled = true;
-            btn.textContent = "Processing...";
-            
-            const model = document.getElementById('model-select').value;
-            await fetch('/add_document', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({text: text, context_name: ctx, model_name: model})
-            });
-            
-            document.getElementById('doc-input').value = '';
-            btn.disabled = false;
-            btn.textContent = "Extract and Save Facts";
-            
-            currentOffset = 0;
-            loadDocs();
-        }
-
-        async function sendQuery() {
-            const ctx = contextSelect.value;
-            const input = document.getElementById('query-input');
-            const question = input.value;
-            if(!question || !ctx) return;
-            
-            if(noteContent.querySelector('.text-gray-400')) noteContent.innerHTML = '';
-            
-            const uDiv = document.createElement('div');
-            uDiv.className = "border-l-4 border-blue-500 pl-4 py-1 mb-6";
-            uDiv.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 tracking-wider">Question</h4>
-                            <p class="text-lg font-medium text-gray-900">${question}</p>`;
-            noteContent.appendChild(uDiv);
-            input.value = '';
-
-            const model = document.getElementById('model-select').value;
-            const resp = await fetch('/query', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({question: question, session_id: sessionId, context_name: ctx, model_name: model})
-            });
-            const data = await resp.json();
-            
-            const aDiv = document.createElement('div');
-            aDiv.className = "prose max-w-none pb-10 border-b border-gray-50";
-            aDiv.innerHTML = `<h4 class="text-[10px] font-bold text-gray-300 uppercase mb-4 tracking-widest">Knowledge Analysis</h4>`;
-            
-            const contentContainer = document.createElement('div');
-            contentContainer.className = "text-gray-800 leading-relaxed";
-            aDiv.appendChild(contentContainer);
-            noteContent.appendChild(aDiv);
-
-            renderMarkdownWithCharts(data.answer, contentContainer);
-            
-            noteContent.scrollTop = noteContent.scrollHeight;
-        }
-    </script>
+    <script src="/static/script.js"></script>
 </body>
 </html>
