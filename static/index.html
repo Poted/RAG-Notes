@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Notes</title>
+    <link rel="icon" type="image/png" href="/static/icon.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        .prose h1, .prose h2 { font-weight: bold; margin-top: 1rem; }
+        .prose ul { list-style-type: disc; margin-left: 1.2rem; }
+        .note-container { height: calc(100vh - 140px); }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 text-gray-900">
+    <div class="max-w-2xl mx-auto min-h-screen flex flex-col bg-white shadow-sm">
+        <header class="border-b p-4 flex justify-between items-center bg-white sticky top-0 z-10">
+            <h1 class="text-lg font-semibold tracking-tight">RAG Agent</h1>
+            <div class="flex gap-2">
+                <button onclick="toggleDocs()" class="text-sm border px-3 py-1 rounded hover:bg-gray-50">Memory</button>
+                <button onclick="clearChat()" class="text-sm border border-red-100 text-red-600 px-3 py-1 rounded hover:bg-red-50">Reset</button>
+            </div>
+        </header>
+
+        <div id="docs-panel" class="hidden p-6 bg-gray-50 border-b overflow-y-auto max-h-[65vh]">
+            <section class="mb-8">
+                <h3 class="text-[10px] font-bold uppercase text-gray-400 mb-2 tracking-widest">Wzbogać bazę wiedzy</h3>
+                <textarea id="doc-input" class="w-full p-3 rounded-lg border border-gray-200 text-sm outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Wklej tekst do przeanalizowania..."></textarea>
+                <button onclick="addDoc()" class="w-full mt-3 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition">Wyodrębnij i zapamiętaj fakty</button>
+            </section>
+            
+            <section>
+                <div class="flex justify-between items-center mb-3 gap-4">
+                    <h3 class="text-[10px] font-bold uppercase text-gray-400 tracking-widest whitespace-nowrap">Zapisane fakty</h3>
+                    <input type="text" id="search-docs" onkeyup="filterDocs()" placeholder="Szukaj w całej bazie..." class="w-full p-2 text-xs border border-gray-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                </div>
+                <div id="docs-list" class="space-y-2 mb-4"></div>
+                <div class="flex justify-between items-center border-t border-gray-100 pt-2">
+                    <button id="prev-btn" onclick="prevPage()" class="text-xs font-medium text-blue-600 disabled:text-gray-300 px-2 py-1">← Nowsze</button>
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-gray-400 font-mono">STRONA</span>
+                        <input type="number" id="page-input" onchange="goToPage()" class="w-12 p-1 text-center text-xs border border-gray-200 rounded outline-none" min="1">
+                    </div>
+                    <button id="next-btn" onclick="nextPage()" class="text-xs font-medium text-blue-600 disabled:text-gray-300 px-2 py-1">Starsze →</button>
+                </div>
+            </section>
+        </div>
+
+        <main id="note-content" class="note-container overflow-y-auto p-6 space-y-8">
+            <div class="text-center text-gray-400 mt-20 font-light italic">Zadaj pytanie, aby przeszukać bazę wiedzy...</div>
+        </main>
+
+        <footer class="p-4 border-t bg-white">
+            <div class="flex gap-3">
+                <input type="text" id="query-input" 
+                    class="flex-1 p-3.5 bg-gray-100 rounded-xl outline-none text-sm" 
+                    placeholder="O co chcesz zapytać?">
+                <button onclick="sendQuery()" class="bg-blue-600 text-white px-6 py-2 rounded-xl font-medium hover:bg-blue-700">Analizuj</button>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const noteContent = document.getElementById('note-content');
+        const sessionId = "session-" + Math.random().toString(36).substring(7);
+        
+        let currentOffset = 0;
+        const limit = 10;
+        let currentSearch = "";
+        let searchTimeout;
+
+        function renderMarkdownWithCharts(text, container) {
+            container.innerHTML = "";
+            const chartRegex = /\[CHART\]([\s\S]*?)\[\/CHART\]/g;
+            let lastIndex = 0;
+            let match;
+
+            while ((match = chartRegex.exec(text)) !== null) {
+                const textBefore = text.substring(lastIndex, match.index);
+                if (textBefore.trim()) {
+                    const textNode = document.createElement('div');
+                    textNode.innerHTML = marked.parse(textBefore);
+                    container.appendChild(textNode);
+                }
+
+                const canvasContainer = document.createElement('div');
+                canvasContainer.className = "my-6 p-4 bg-gray-50 rounded-xl shadow-sm";
+                canvasContainer.style.height = "300px";
+                canvasContainer.style.position = "relative";
+                
+                const canvas = document.createElement('canvas');
+                canvasContainer.appendChild(canvas);
+                container.appendChild(canvasContainer);
+
+                try {
+                    const cleanJson = match[1].trim();
+                    const config = JSON.parse(cleanJson);
+                    config.options = config.options || {};
+                    config.options.maintainAspectRatio = false;
+                    config.options.responsive = true;
+                    new Chart(canvas, config);
+                } catch (e) {
+                    console.error("Chart error:", e);
+                    canvasContainer.innerHTML = `<p class="text-red-500 text-xs">Error rendering chart</p>`;
+                }
+
+                lastIndex = chartRegex.lastIndex;
+            }
+
+            const remainingText = text.substring(lastIndex);
+            if (remainingText.trim()) {
+                const textNode = document.createElement('div');
+                textNode.innerHTML = marked.parse(remainingText);
+                container.appendChild(textNode);
+            }
+        }
+
+        async function toggleDocs() {
+            const panel = document.getElementById('docs-panel');
+            panel.classList.toggle('hidden');
+            if(!panel.classList.contains('hidden')) {
+                currentOffset = 0;
+                document.getElementById('search-docs').value = "";
+                currentSearch = "";
+                loadDocs();
+            }
+        }
+
+        async function loadDocs() {
+            const url = `/documents?limit=${limit}&offset=${currentOffset}${currentSearch ? '&search=' + encodeURIComponent(currentSearch) : ''}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            const list = document.getElementById('docs-list');
+            
+            list.innerHTML = data.documents.length ? data.documents.map(d => `
+                <div class="flex justify-between items-start gap-3 p-3 bg-white rounded-lg border border-gray-100 shadow-sm text-[13px] leading-snug">
+                    <span class="flex-1 text-gray-700">${d.content}</span>
+                    <button onclick="deleteDoc('${d.id}')" class="text-red-400 hover:text-red-600 px-1 text-lg font-light">×</button>
+                </div>
+            `).join('') : '<p class="text-xs text-gray-400 italic">Brak wyników.</p>';
+
+            document.getElementById('prev-btn').disabled = currentOffset === 0;
+            document.getElementById('next-btn').disabled = data.documents.length < limit || (currentOffset + limit >= data.total);
+            
+            const pageNum = Math.floor(currentOffset / limit) + 1;
+            document.getElementById('page-input').value = pageNum;
+        }
+
+        function filterDocs() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearch = document.getElementById('search-docs').value;
+                currentOffset = 0;
+                loadDocs();
+            }, 400);
+        }
+
+        function prevPage() {
+            if (currentOffset >= limit) {
+                currentOffset -= limit;
+                loadDocs();
+            }
+        }
+
+        function nextPage() {
+            currentOffset += limit;
+            loadDocs();
+        }
+
+        function goToPage() {
+            const page = parseInt(document.getElementById('page-input').value);
+            if (page > 0) {
+                currentOffset = (page - 1) * limit;
+                loadDocs();
+            }
+        }
+
+        async function deleteDoc(id) {
+            await fetch(`/documents?doc_id=${id}`, { method: 'DELETE' });
+            loadDocs();
+        }
+
+        async function clearChat() {
+            await fetch(`/session/${sessionId}`, { method: 'DELETE' });
+            noteContent.innerHTML = '<div class="text-center text-gray-400 mt-20 font-light italic">Pamięć rozmowy wyczyszczona.</div>';
+        }
+
+        async function addDoc() {
+            const btn = event.target;
+            const text = document.getElementById('doc-input').value;
+            if(!text) return;
+            
+            btn.disabled = true;
+            btn.textContent = "Przetwarzanie...";
+            
+            await fetch('/add_document', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({text})
+            });
+            
+            document.getElementById('doc-input').value = '';
+            btn.disabled = false;
+            btn.textContent = "Wyodrębnij i zapamiętaj fakty";
+            
+            currentOffset = 0;
+            loadDocs();
+        }
+
+        async function sendQuery() {
+            const input = document.getElementById('query-input');
+            const question = input.value;
+            if(!question) return;
+            
+            if(noteContent.querySelector('.text-gray-400')) noteContent.innerHTML = '';
+            
+            const uDiv = document.createElement('div');
+            uDiv.className = "border-l-4 border-blue-500 pl-4 py-1 mb-6";
+            uDiv.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 tracking-wider">Pytanie</h4>
+                            <p class="text-lg font-medium text-gray-900">${question}</p>`;
+            noteContent.appendChild(uDiv);
+            input.value = '';
+
+            const resp = await fetch('/query', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({question, session_id: sessionId})
+            });
+            const data = await resp.json();
+            
+            const aDiv = document.createElement('div');
+            aDiv.className = "prose max-w-none pb-10 border-b border-gray-50";
+            aDiv.innerHTML = `<h4 class="text-[10px] font-bold text-gray-300 uppercase mb-4 tracking-widest">Analiza wiedzy</h4>`;
+            
+            const contentContainer = document.createElement('div');
+            contentContainer.className = "text-gray-800 leading-relaxed";
+            aDiv.appendChild(contentContainer);
+            noteContent.appendChild(aDiv);
+
+            renderMarkdownWithCharts(data.answer, contentContainer);
+            
+            noteContent.scrollTop = noteContent.scrollHeight;
+        }
+    </script>
+</body>
+</html>
