@@ -197,15 +197,15 @@ html.dark canvas {
 
 @keyframes neon-surge {
     0%, 100% {
-        filter: brightness(1);
         box-shadow: 0 -8px 32px -8px rgba(0, 122, 255, 0.3);
+        background-color: rgba(44, 44, 46, 0.8);
     }
     50% {
-        filter: brightness(1.35);
-        box-shadow: 0 -8px 50px -2px rgba(0, 122, 255, 0.7);
+        box-shadow: 0 -20px 60px 5px rgba(0, 122, 255, 0.6);
+        background-color: rgba(55, 60, 75, 0.95);
     }
 }
 
 html.dark .animate-neon-surge {
-    animation: neon-surge 3s ease-in-out infinite !important;
+    animation: neon-surge 2.5s ease-in-out infinite !important;
 }

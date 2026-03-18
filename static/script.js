@@ -413,7 +413,7 @@ async function sendQuery() {
 
     if (topNeon) topNeon.classList.add('animate-neon-surge');
     if (bottomNeon) bottomNeon.classList.add('animate-neon-surge');
-
+    
     let finalQuery = isAnalysisMode ? "analyze: " + q : q;
 
     try {
