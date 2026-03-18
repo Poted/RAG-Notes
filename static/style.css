@@ -194,3 +194,18 @@ html.dark canvas {
 #docs-list > div {
     word-break: break-word;
 }
+
+@keyframes neon-breath {
+    0%, 100% {
+        filter: brightness(100%);
+        box-shadow: 0 -8px 32px -8px rgba(0, 122, 255, 0.3);
+    }
+    50% {
+        filter: brightness(180%);
+        box-shadow: 0 -8px 45px -4px rgba(0, 122, 255, 0.6);
+    }
+}
+
+.animate-neon {
+    animation: neon-breath 4s ease-in-out infinite;
+}

@@ -411,8 +411,8 @@ async function sendQuery() {
     noteContent.appendChild(u);
     noteContent.scrollTop = noteContent.scrollHeight;
 
-    if (topNeon) topNeon.classList.add('animate-pulse', 'duration-[4s]', 'brightness-150');
-    if (bottomNeon) bottomNeon.classList.add('animate-pulse', 'duration-[4s]', 'brightness-50');
+    if (topNeon) topNeon.classList.add('animate-neon');
+    if (bottomNeon) bottomNeon.classList.add('animate-neon');
 
     let finalQuery = q;
     if (isAnalysisMode) {
@@ -439,8 +439,8 @@ async function sendQuery() {
         speak(data.answer);
     } catch (err) {
     } finally {
-        if (topNeon) topNeon.classList.remove('animate-pulse', 'duration-[4s]', 'brightness-150');
-        if (bottomNeon) bottomNeon.classList.remove('animate-pulse', 'duration-[4s]', 'brightness-50');
+        if (topNeon) topNeon.classList.remove('animate-neon');
+        if (bottomNeon) bottomNeon.classList.remove('animate-neon');
     }
 }
 
