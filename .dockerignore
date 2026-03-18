@@ -1,0 +1,11 @@
+.venv
+venv
+env
+__pycache__
+.git
+.env
+chroma_db
+chat_history.db
+*.db
+*.sqlite3
+data/
