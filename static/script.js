@@ -354,22 +354,55 @@ let isAnalysisMode = false;
 function toggleMode() {
     isAnalysisMode = !isAnalysisMode;
     const btn = document.getElementById('action-btn');
-    const container = document.getElementById('action-btn-container');
     
     if (isAnalysisMode) {
         btn.textContent = "Analyze";
-        container.className = "shrink-0 relative flex items-stretch bg-purple-600 dark:bg-purple-500/30 rounded-full shadow-lg elegant-glow transition-all duration-300";
     } else {
         btn.textContent = "Ask";
-        container.className = "shrink-0 relative flex items-stretch bg-gray-900 dark:bg-white/10 rounded-full shadow-lg shadow-gray-900/20 dark:shadow-none elegant-glow transition-all duration-300";
     }
 }
+
+const placeholderPhrases = ["Ask or talk...", "Ask to explain me"];
+let pPhraseIndex = 0;
+let pCharIndex = 0;
+let pIsDeleting = false;
+
+function typePlaceholder() {
+    const input = document.getElementById('query-input');
+    if (!input) return;
+
+    const currentPhrase = placeholderPhrases[pPhraseIndex];
+    
+    if (pIsDeleting) {
+        pCharIndex--;
+    } else {
+        pCharIndex++;
+    }
+
+    input.setAttribute('placeholder', currentPhrase.substring(0, pCharIndex));
+
+    let typeSpeed = pIsDeleting ? 30 : 80;
+
+    if (!pIsDeleting && pCharIndex === currentPhrase.length) {
+        typeSpeed = 3000;
+        pIsDeleting = true;
+    } else if (pIsDeleting && pCharIndex === 0) {
+        pIsDeleting = false;
+        pPhraseIndex = (pPhraseIndex + 1) % placeholderPhrases.length;
+        typeSpeed = 500;
+    }
+
+    setTimeout(typePlaceholder, typeSpeed);
+}
+
+setTimeout(typePlaceholder, 1000);
 
 async function sendQuery() {
     const ctx = contextSelect.value;
     const input = document.getElementById('query-input');
     const model = document.getElementById('model-select').value;
-    const neon = document.getElementById('neon-divider');
+    const topNeon = document.getElementById('top-neon');
+    const bottomNeon = document.getElementById('bottom-neon');
     
     let q = input.value;
     if(!q) return;
@@ -382,7 +415,8 @@ async function sendQuery() {
     noteContent.appendChild(u);
     noteContent.scrollTop = noteContent.scrollHeight;
 
-    if (neon) neon.classList.add('animate-pulse', 'brightness-150');
+    if (topNeon) topNeon.classList.add('animate-pulse', 'brightness-150');
+    if (bottomNeon) bottomNeon.classList.add('animate-pulse');
 
     let finalQuery = q;
     if (isAnalysisMode) {
@@ -407,7 +441,8 @@ async function sendQuery() {
         speak(data.answer);
     } catch (err) {
     } finally {
-        if (neon) neon.classList.remove('animate-pulse', 'brightness-150');
+        if (topNeon) topNeon.classList.remove('animate-pulse', 'brightness-150');
+        if (bottomNeon) bottomNeon.classList.remove('animate-pulse');
     }
 }
 

@@ -112,12 +112,11 @@
             <div class="text-center text-gray-500 dark:text-[#8e8e93] mt-20 font-medium" id="welcome-msg">Loading...</div>
         </main>
 
-        <footer class="shrink-0 p-4 border-t border-gray-200 dark:border-white/5 bg-white/80 dark:bg-[#2c2c2e]/80 backdrop-blur-3xl z-10 pb-8 sm:pb-4">
+        <footer class="shrink-0 p-4 border-t border-gray-200 dark:border-white/5 bg-white/80 dark:bg-[#2c2c2e]/80 backdrop-blur-3xl z-10 pb-8 sm:pb-4 transition-all duration-300" id="bottom-neon">
             <div class="flex gap-2 sm:gap-3 items-stretch">
                 <div class="relative flex-1">
                     <input type="text" id="query-input" 
-                        class="w-full h-full p-4 pl-5 bg-gray-100 dark:bg-[#23252d] border border-transparent dark:border-transparent rounded-full outline-none text-sm focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/20 dark:text-white transition-all pr-12 elegant-glow" 
-                        placeholder="Ask or talk... (Try 'How does it work?')">
+                        class="w-full h-full p-4 pl-5 bg-gray-100 dark:bg-[#23252d] border border-transparent dark:border-transparent rounded-full outline-none text-sm focus:ring-2 focus:ring-gray-400 dark:focus:ring-white/20 dark:text-white transition-all pr-12 elegant-glow">
                     <button id="mic-btn" onclick="toggleMic()" class="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 dark:text-[#8e8e93] hover:text-[#ff3b30] dark:hover:text-[#ff453a] transition-all rounded-full hover:bg-gray-200 dark:hover:bg-[#343743]">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -126,9 +125,7 @@
                 </div>
 
                 <div id="action-btn-container" class="shrink-0 relative flex items-stretch bg-gray-900 dark:bg-white/10 rounded-full shadow-lg shadow-gray-900/20 dark:shadow-none elegant-glow transition-all duration-300">
-                    <button id="action-btn" onclick="sendQuery()" class="text-white pl-6 pr-4 font-bold text-sm hover:bg-white/10 rounded-l-full transition-all flex items-center justify-center">
-                        Ask
-                    </button>
+                    <button id="action-btn" onclick="sendQuery()" class="text-white pl-6 pr-4 font-bold text-sm hover:bg-white/10 rounded-l-full transition-all flex items-center justify-center">Ask</button>
                     <div class="w-[1px] bg-white/20 my-3"></div>
                     <button onclick="toggleMode()" class="text-white px-4 hover:bg-white/10 rounded-r-full transition-all flex items-center justify-center">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
