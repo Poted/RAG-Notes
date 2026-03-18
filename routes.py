@@ -90,15 +90,32 @@ async def delete_context(context_name: str, username: str = Depends(authenticate
 async def list_documents(context_name: str = Query(...), limit: int = 10, offset: int = 0, search: str = None, username: str = Depends(authenticate)):
     try:
         col = get_vector_collection(username, context_name)
-        total = col.count()
-        if total == 0: return {"total": 0, "documents": []}
         data = col.get()
-        docs = [{"id": data['ids'][i], "content": data['documents'][i]} for i in range(len(data['ids']))]
+        
+        if not data or not data['ids']:
+            return {"total": 0, "documents": []}
+            
+        docs = []
+        for i in range(len(data['ids'])):
+            docs.append({"id": data['ids'][i], "content": data['documents'][i]})
+        
         if search:
             docs = [d for d in docs if search.lower() in d['content'].lower()]
-        return {"total": len(docs), "documents": docs[::-1][offset:offset+limit]}
+        
+        docs.reverse()
+        total_count = len(docs)
+        return {"total": total_count, "documents": docs[offset:offset+limit]}
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to list documents.")
+
+@router.delete("/documents")
+async def delete_document(context_name: str = Query(...), doc_id: str = Query(...), username: str = Depends(authenticate)):
+    try:
+        col = get_vector_collection(username, context_name)
+        col.delete(ids=[doc_id])
+        return {"message": "Document deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"Could not delete document: {str(e)}")
 
 @router.get("/history")
 async def get_history(session_id: str, context_name: str = Query(...), username: str = Depends(authenticate)):
