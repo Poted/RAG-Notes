@@ -354,7 +354,6 @@ let isAnalysisMode = false;
 function toggleMode() {
     isAnalysisMode = !isAnalysisMode;
     const btn = document.getElementById('action-btn');
-    
     if (isAnalysisMode) {
         btn.textContent = "Analyze";
     } else {
@@ -362,7 +361,7 @@ function toggleMode() {
     }
 }
 
-const placeholderPhrases = ["Ask or talk...", "Ask to explain me"];
+const placeholderPhrases = ["Ask or talk...", "Try 'Explain how you work'"];
 let pPhraseIndex = 0;
 let pCharIndex = 0;
 let pIsDeleting = false;
@@ -384,7 +383,7 @@ function typePlaceholder() {
     let typeSpeed = pIsDeleting ? 30 : 80;
 
     if (!pIsDeleting && pCharIndex === currentPhrase.length) {
-        typeSpeed = 3000;
+        typeSpeed = 2000;
         pIsDeleting = true;
     } else if (pIsDeleting && pCharIndex === 0) {
         pIsDeleting = false;
@@ -401,8 +400,7 @@ async function sendQuery() {
     const ctx = contextSelect.value;
     const input = document.getElementById('query-input');
     const model = document.getElementById('model-select').value;
-    const topNeon = document.getElementById('top-neon');
-    const bottomNeon = document.getElementById('bottom-neon');
+    const neon = document.getElementById('neon-divider');
     
     let q = input.value;
     if(!q) return;
@@ -415,8 +413,7 @@ async function sendQuery() {
     noteContent.appendChild(u);
     noteContent.scrollTop = noteContent.scrollHeight;
 
-    if (topNeon) topNeon.classList.add('animate-pulse', 'brightness-150');
-    if (bottomNeon) bottomNeon.classList.add('animate-pulse');
+    if (neon) neon.classList.add('animate-pulse', 'brightness-150');
 
     let finalQuery = q;
     if (isAnalysisMode) {
@@ -441,8 +438,7 @@ async function sendQuery() {
         speak(data.answer);
     } catch (err) {
     } finally {
-        if (topNeon) topNeon.classList.remove('animate-pulse', 'brightness-150');
-        if (bottomNeon) bottomNeon.classList.remove('animate-pulse');
+        if (neon) neon.classList.remove('animate-pulse', 'brightness-150');
     }
 }
 
