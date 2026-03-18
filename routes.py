@@ -15,6 +15,7 @@ from database import (
 from ai_engine import generate_with_retry, chunk_text
 from prompts import get_extraction_prompt, get_analysis_prompt, get_system_instructions
 from google.generativeai import types
+import google.generativeai as genai
 
 router = APIRouter()
 security = HTTPBasic()
@@ -58,11 +59,16 @@ async def unified_auth(req: RegisterRequest):
 @router.get("/models")
 async def list_models(_: str = Depends(authenticate)):
     try:
-        models = client.models.list()
+        models = genai.list_models()
+        
         excluded = ["embedding", "aqa", "imagen", "veo", "tts", "audio", "banana", "robotics", "computer-use", "deep-research"]
-        return {"models": [m.name for m in models if not any(x in m.name.lower() for x in excluded)]}
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to fetch models.")
+        
+        model_list = [m.name for m in models if not any(x in m.name.lower() for x in excluded)]
+        
+        return {"models": model_list}
+    except Exception as e:
+        print(f"Error listing models: {e}") # To pomoże Ci zobaczyć błąd w logach Railway
+        raise HTTPException(status_code=500, detail="Failed to fetch models from Google API.")
 
 @router.get("/contexts")
 async def list_contexts(username: str = Depends(authenticate)):
