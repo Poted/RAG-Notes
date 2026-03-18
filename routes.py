@@ -12,9 +12,9 @@ from database import (
     chroma_client, save_chat_message, clear_chat_history, 
     get_chat_history, verify_user, add_user, get_user_col_name, get_vector_collection
 )
-from ai_engine import client, generate_with_retry, chunk_text
+from ai_engine import generate_with_retry, chunk_text
 from prompts import get_extraction_prompt, get_analysis_prompt, get_system_instructions
-from google.genai import types
+from google.generativeai import types
 
 router = APIRouter()
 security = HTTPBasic()
