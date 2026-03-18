@@ -351,55 +351,41 @@ function renderMarkdownWithCharts(text, container) {
 
 let isAnalysisMode = false;
 
-function setMode(mode) {
-    isAnalysisMode = (mode === 'analyze');
-    const chatBtn = document.getElementById('mode-chat-btn');
-    const analyzeBtn = document.getElementById('mode-analyze-btn');
-
+function toggleMode() {
+    isAnalysisMode = !isAnalysisMode;
+    const btn = document.getElementById('action-btn');
+    const container = document.getElementById('action-btn-container');
+    
     if (isAnalysisMode) {
-        analyzeBtn.className = "px-4 py-1.5 text-xs font-bold rounded-full bg-white dark:bg-[#3a3a3c] text-gray-900 dark:text-white shadow-sm transition-all";
-        chatBtn.className = "px-4 py-1.5 text-xs font-bold rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all";
+        btn.textContent = "Analyze";
+        container.className = "shrink-0 relative flex items-stretch bg-purple-600 dark:bg-purple-500/30 rounded-full shadow-lg elegant-glow transition-all duration-300";
     } else {
-        chatBtn.className = "px-4 py-1.5 text-xs font-bold rounded-full bg-white dark:bg-[#3a3a3c] text-gray-900 dark:text-white shadow-sm transition-all";
-        analyzeBtn.className = "px-4 py-1.5 text-xs font-bold rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all";
+        btn.textContent = "Ask";
+        container.className = "shrink-0 relative flex items-stretch bg-gray-900 dark:bg-white/10 rounded-full shadow-lg shadow-gray-900/20 dark:shadow-none elegant-glow transition-all duration-300";
     }
 }
 
-function askForHelp() {
-const manualPrompt = `Act as the official documentation for Context Notes. Explain comprehensively how the application works using clear headings and bullet points. Cover these core features:
-1. Contexts: Isolated workspaces. Each context maintains its own independent chat history and vector database memory.
-2. Knowledge Base (Memory): Users paste text to be processed by AI into short, atomic facts. These facts are permanently stored in ChromaDB and automatically retrieved via semantic search to provide context-aware answers.
-3. Interaction Modes: 'Ask' mode is for standard conversation and semantic retrieval (top 15 relevant facts). 'Analyze' mode forces the AI to aggregate database facts (up to 500 records) and generate visual charts or statistical summaries using Chart.js.
-4. Features: Mention speech-to-text (microphone), text-to-speech (speaker), dark mode toggle, and dynamic LLM model switching.
-Tone: Professional, highly informative, concise and friendly. Format: Markdown.`;
-
-    const displayQ = "Explain me";
-    sendQuery(manualPrompt, displayQ);
-}
-
-async function sendQuery(customQuery = null, customDisplay = null) {
+async function sendQuery() {
     const ctx = contextSelect.value;
     const input = document.getElementById('query-input');
     const model = document.getElementById('model-select').value;
+    const neon = document.getElementById('neon-divider');
     
-    const isCustom = typeof customQuery === 'string';
-    let q = isCustom ? customQuery : input.value;
-    let visibleQ = (typeof customDisplay === 'string') ? customDisplay : q;
-    
+    let q = input.value;
     if(!q) return;
     
-    if (!isCustom) {
-        input.value = '';
-    }
+    input.value = '';
 
     const u = document.createElement('div');
     u.className = "border-l-4 border-blue-500 pl-4 py-1 mb-6 bg-gray-50/50 rounded-r-lg";
-    u.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 pt-2">Question</h4><p class="text-[15px] sm:text-base font-medium text-gray-900 pb-2">${visibleQ}</p>`;
+    u.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 pt-2">Question</h4><p class="text-[15px] sm:text-base font-medium text-gray-900 pb-2">${q}</p>`;
     noteContent.appendChild(u);
     noteContent.scrollTop = noteContent.scrollHeight;
 
+    if (neon) neon.classList.add('animate-pulse', 'brightness-150');
+
     let finalQuery = q;
-    if (isAnalysisMode && !isCustom) {
+    if (isAnalysisMode) {
         finalQuery = "analyze: " + q;
     }
 
@@ -419,7 +405,10 @@ async function sendQuery(customQuery = null, customDisplay = null) {
         renderMarkdownWithCharts(data.answer, c);
         noteContent.scrollTop = noteContent.scrollHeight;
         speak(data.answer);
-    } catch (err) {}
+    } catch (err) {
+    } finally {
+        if (neon) neon.classList.remove('animate-pulse', 'brightness-150');
+    }
 }
 
 async function addDoc() {
