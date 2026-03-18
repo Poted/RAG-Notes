@@ -1,16 +1,28 @@
 def get_extraction_prompt(current_date: str, chunk: str) -> str:
     return f"""
-    Extract SHORT, ATOMIC facts from the text.
-    
-    RULES:
-    1. If it is a personal event, log, or action, determine the 'date' using {current_date} as today. Use YYYY-MM-DD.
-    2. If it is static knowledge, specification, or general fact, set 'date' to null.
-    3. Assign a simple 1-word 'category'.
-    4. The 'fact' string should be a clean sentence.
-    5. EXPLICIT TIMEFRAME: ONLY prepend the current date if the user explicitly specifies a timeframe (e.g., "today", "tomorrow", "this month", "next week"). Example User input: "I want to eat pizza today." -> Extracted fact: "[{current_date}] The user wants to eat pizza."
-    6. NO TIME WORD = NULL DATE: If the input lacks an explicit temporal trigger (like 'today', 'now', 'this week', 'yesterday'), you MUST set 'date' to null, even for personal statements. General states or skills (e.g., "I write in Go") are NOT logs and MUST have a null date unless a timeframe is mentioned.
-    7. GENERAL GOALS: DO NOT add any dates to general goals, skills they want to learn, or long-term desires that lack a specific timeframe. Example User input: "I want to learn how to fly a drone." -> Extracted fact: "The user wants to learn how to fly a drone."
-    
+    Extract SHORT, ATOMIC facts from the text. 
+    Current reference date is: {current_date}
+
+    CATEGORIZATION RULES:
+    1. Assign exactly ONE lowercase word as 'category'.
+    2. BE BROAD AND CONSISTENT: Group similar topics under broad nouns. 
+       (Examples of good categories: 'fitness', 'diet', 'finance', 'work', 'health', 'hobby', 'car', 'home').
+    3. AVOID hyper-specific words. (e.g., use 'diet' instead of 'apple', use 'finance' instead of 'invoice').
+
+    DATE & LOGGING RULES (STRICT):
+    1. RELATIVE DATES: If the text mentions "today", "yesterday", "now", "tomorrow", "two days ago", etc.:
+       - CALCULATE the exact date based on {current_date}.
+       - PREPEND to 'fact' in brackets: [YYYY-MM-DD].
+       - REMOVE the relative time word from the final 'fact' text.
+
+    2. IMPLICIT LOGS: If the text describes a specific action or event (e.g., "I ate a steak", "I paid taxes") but NO time is mentioned:
+       - ASSUME it happened today. 
+       - PREPEND [{current_date}] to the 'fact'.
+
+    3. STATIC KNOWLEDGE: If the fact is a general truth, skill, or trait (e.g., "I like Python"):
+       - SET 'date' to null.
+       - DO NOT prepend any date to the 'fact'.
+
     Text to process:
     {chunk}
     """
