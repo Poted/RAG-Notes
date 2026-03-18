@@ -161,3 +161,29 @@ async def query(request: QueryRequest, username: str = Depends(authenticate)):
         return {"answer": resp.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.get("/debug")
+async def system_debug():
+    import os
+    import sqlite3
+    from config import DATA_DIR, DB_PATH
+    
+    debug_data = {
+        "1_DATA_DIR": DATA_DIR,
+        "2_DIR_EXISTS": os.path.exists(DATA_DIR),
+        "3_DB_EXISTS": os.path.exists(DB_PATH),
+        "4_DB_SIZE_KB": round(os.path.getsize(DB_PATH) / 1024, 2) if os.path.exists(DB_PATH) else 0,
+        "5_USERS_IN_DB": [],
+        "6_TOTAL_MESSAGES": 0
+    }
+    
+    if os.path.exists(DB_PATH):
+        try:
+            with sqlite3.connect(DB_PATH) as conn:
+                debug_data["5_USERS_IN_DB"] = [row[0] for row in conn.execute("SELECT username FROM users").fetchall()]
+                debug_data["6_TOTAL_MESSAGES"] = conn.execute("SELECT COUNT(*) FROM history").fetchone()[0]
+        except Exception as e:
+            debug_data["DB_ERROR"] = str(e)
+            
+    return debug_data
