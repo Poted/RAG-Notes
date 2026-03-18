@@ -1,16 +1,14 @@
 import time
-import google.generativeai as genai
+from google import genai
 from config import API_KEY
 
-genai.configure(api_key=API_KEY)
+client = genai.Client(api_key=API_KEY)
 
 def generate_with_retry(model_name, prompt, config=None, retries=3, delay=10):
-    model_id = model_name.replace("models/", "")
-    model = genai.GenerativeModel(model_id)
-    
+    m_name = model_name.replace("models/", "")
     for attempt in range(retries):
         try:
-            return model.generate_content(prompt, generation_config=config)
+            return client.models.generate_content(model=m_name, contents=prompt, config=config)
         except Exception as e:
             err = str(e).lower()
             if "429" in err or "503" in err:

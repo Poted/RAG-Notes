@@ -3,5 +3,5 @@ uvicorn
 pydantic
 python-dotenv
 chromadb
-google-generativeai
+google-genai
 werkzeug
