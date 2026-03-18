@@ -10,13 +10,11 @@ from config import DB_PATH
 from schemas import ContextRequest, DocumentRequest, QueryRequest, QueryAnalysis, ExtractedData
 from database import (
     chroma_client, save_chat_message, clear_chat_history, 
-    get_chat_history, verify_user, add_user
+    get_chat_history, verify_user, add_user, get_user_col_name, get_vector_collection
 )
-from ai_engine import client, generate_with_retry, get_embedder, chunk_text
+from ai_engine import client, generate_with_retry, chunk_text
 from prompts import get_extraction_prompt, get_analysis_prompt, get_system_instructions
 from google.genai import types
-from pydantic import BaseModel
-from database import add_user
 
 router = APIRouter()
 security = HTTPBasic()
@@ -41,9 +39,9 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
 
 @router.post("/auth")
 async def unified_auth(req: RegisterRequest):
-    import sqlite3
-    from config import DB_PATH
-    
+    if not req.username or not req.password:
+        raise HTTPException(status_code=400, detail="Missing credentials")
+        
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute("SELECT password_hash FROM users WHERE username = ?", (req.username,))
         row = cursor.fetchone()
@@ -57,16 +55,13 @@ async def unified_auth(req: RegisterRequest):
     
     raise HTTPException(status_code=401, detail="Invalid password")
 
-def get_user_col_name(username: str, context_name: str) -> str:
-    return f"u_{username}_{context_name}"
-
 @router.get("/models")
 async def list_models(_: str = Depends(authenticate)):
     try:
         models = client.models.list()
         excluded = ["embedding", "aqa", "imagen", "veo", "tts", "audio", "banana", "robotics", "computer-use", "deep-research"]
         return {"models": [m.name for m in models if not any(x in m.name.lower() for x in excluded)]}
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to fetch models.")
 
 @router.get("/contexts")
@@ -79,8 +74,7 @@ async def list_contexts(username: str = Depends(authenticate)):
 @router.post("/contexts")
 async def create_context(req: ContextRequest, username: str = Depends(authenticate)):
     try:
-        full_name = get_user_col_name(username, req.name)
-        chroma_client.create_collection(name=full_name)
+        get_vector_collection(username, req.name)
         return {"message": "Created"}
     except Exception:
         raise HTTPException(status_code=400, detail="Failed to create context.")
@@ -99,8 +93,7 @@ async def delete_context(context_name: str, username: str = Depends(authenticate
 @router.get("/documents")
 async def list_documents(context_name: str = Query(...), limit: int = 10, offset: int = 0, search: str = None, username: str = Depends(authenticate)):
     try:
-        full_name = get_user_col_name(username, context_name)
-        col = chroma_client.get_collection(name=full_name)
+        col = get_vector_collection(username, context_name)
         total = col.count()
         if total == 0: return {"total": 0, "documents": []}
         data = col.get()
@@ -129,22 +122,24 @@ async def reset_session(session_id: str, context_name: str = Query(...), usernam
 @router.post("/add_document")
 async def add_document(request: DocumentRequest, username: str = Depends(authenticate)):
     try:
-        full_name = get_user_col_name(username, request.context_name)
-        col = chroma_client.get_collection(name=full_name)
+        col = get_vector_collection(username, request.context_name)
         cur_date = datetime.now().strftime("%Y-%m-%d")
-        inst = get_embedder()
         cfg = types.GenerateContentConfig(response_mime_type="application/json", response_schema=ExtractedData, temperature=0.1)
+        
         for chunk in chunk_text(request.text):
             resp = generate_with_retry(request.model_name, get_extraction_prompt(cur_date, chunk), config=cfg)
             data = json.loads(resp.text.strip().replace("```json", "").replace("```", ""))
-            p_docs, p_embs, p_ids, p_metas = [], [], [], []
+            p_docs, p_ids, p_metas = [], [], []
+            
             for entry in data.get("entries", []):
                 txt = f"{entry['date']}: {entry['fact']}" if entry.get('date') else entry['fact']
                 p_docs.append(txt)
-                p_embs.append(inst.encode(txt).tolist())
                 p_ids.append(hashlib.md5(txt.encode()).hexdigest())
                 p_metas.append({"category": entry.get("category", "general"), "date": entry.get("date"), "owner": username})
-            if p_ids: col.upsert(documents=p_docs, embeddings=p_embs, ids=p_ids, metadatas=p_metas)
+            
+            # Kluczowe: ChromaDB sama wywoła Google API dla p_docs, bo podpięliśmy funkcję w database.py
+            if p_ids: 
+                col.upsert(documents=p_docs, ids=p_ids, metadatas=p_metas)
         return {"message": "Done"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -152,15 +147,17 @@ async def add_document(request: DocumentRequest, username: str = Depends(authent
 @router.post("/query")
 async def query(request: QueryRequest, username: str = Depends(authenticate)):
     try:
-        full_name = get_user_col_name(username, request.context_name)
-        col = chroma_client.get_collection(name=full_name)
+        col = get_vector_collection(username, request.context_name)
         cur_date = datetime.now().strftime("%Y-%m-%d")
         hist = get_chat_history(request.session_id, username, request.context_name, limit=4)
         h_str = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in hist]) if hist else "No history."
+        
         cfg = types.GenerateContentConfig(response_mime_type="application/json", response_schema=QueryAnalysis, temperature=0.0)
         ana_resp = generate_with_retry(request.model_name, get_analysis_prompt(cur_date, h_str, request.question), config=cfg)
         ana = json.loads(ana_resp.text.strip().replace("```json", "").replace("```", ""))
+        
         q = ana.get("standalone_question", request.question)
+        
         if ana.get("is_analytical"):
             where = {"category": ana['category'].lower()} if ana.get('category') and ana['category'].lower() != "general" else None
             res = col.get(where=where) if where else col.get(limit=500)
@@ -168,11 +165,15 @@ async def query(request: QueryRequest, username: str = Depends(authenticate)):
                 res = col.get(limit=500)
             ctx = "\n".join(res['documents'])
         else:
-            res = col.query(query_embeddings=[get_embedder().encode(q).tolist()], n_results=15)
+            # Kluczowe: Używamy query_texts zamiast query_embeddings
+            res = col.query(query_texts=[q], n_results=15)
             ctx = "\n\n".join(res['documents'][0]) if res['documents'] else ""
+            
         resp = generate_with_retry(request.model_name, f"{get_system_instructions(cur_date, h_str)}\n\nContext:\n{ctx}\n\nQuestion: {q}\n\nAnswer:")
+        
         save_chat_message(request.session_id, username, request.context_name, "user", request.question)
         save_chat_message(request.session_id, username, request.context_name, "assistant", resp.text)
+        
         return {"answer": resp.text}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

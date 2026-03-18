@@ -3,14 +3,6 @@ from google import genai
 from config import API_KEY
 
 client = genai.Client(api_key=API_KEY)
-embedder = None
-
-def get_embedder():
-    global embedder
-    if embedder is None:
-        from sentence_transformers import SentenceTransformer
-        embedder = SentenceTransformer('all-MiniLM-L6-v2')
-    return embedder
 
 def generate_with_retry(model_name, prompt, config=None, retries=3, delay=10):
     for attempt in range(retries):
@@ -22,13 +14,13 @@ def generate_with_retry(model_name, prompt, config=None, retries=3, delay=10):
                 if attempt < retries - 1:
                     time.sleep(delay)
                 else:
-                    raise Exception("API Quota Exceeded (429) or Service Unavailable. Please wait a moment and try again.")
+                    raise Exception("API Quota Exceeded or Service Unavailable. Please wait a moment.")
             elif "404" in err:
-                raise Exception(f"Model not found: {model_name}. It might be restricted or unavailable.")
+                raise Exception(f"Model not found: {model_name}.")
             elif "400" in err:
                 raise Exception("Bad Request (400). The model rejected the input.")
             else:
-                raise Exception("An unexpected error occurred while communicating with the AI model.")
+                raise Exception(f"An unexpected error occurred: {str(e)}")
 
 def chunk_text(text: str, size: int = 4000, overlap: int = 400):
     chunks = []
@@ -36,5 +28,7 @@ def chunk_text(text: str, size: int = 4000, overlap: int = 400):
     while start < len(text):
         end = start + size
         chunks.append(text[start:end])
+        if end >= len(text):
+            break
         start += size - overlap
     return chunks

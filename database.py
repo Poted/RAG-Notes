@@ -1,9 +1,31 @@
 import sqlite3
 import chromadb
-from config import CHROMA_PATH, DB_PATH
+import google.generativeai as genai
+from chromadb.utils.embedding_functions import EmbeddingFunction
+from config import CHROMA_PATH, DB_PATH, API_KEY
 from werkzeug.security import generate_password_hash
 
+genai.configure(api_key=API_KEY)
+
+class GoogleEmbeddings(EmbeddingFunction):
+    def __call__(self, input: list[str]) -> list[list[float]]:
+        model = 'models/text-embedding-004'
+        result = genai.embed_content(
+            model=model,
+            content=input,
+            task_type="retrieval_document"
+        )
+        return result['embedding']
+
+embedding_fn = GoogleEmbeddings()
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+
+def get_vector_collection(username: str, context_name: str):
+    collection_name = f"{username}_{context_name}"
+    return chroma_client.get_or_create_collection(
+        name=collection_name,
+        embedding_function=embedding_fn
+    )
 
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:

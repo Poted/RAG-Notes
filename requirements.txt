@@ -3,7 +3,4 @@ uvicorn
 pydantic
 python-dotenv
 chromadb
-sentence-transformers
-google-genai
-flask
-werkzeug
+google-generativeai
