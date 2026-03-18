@@ -439,7 +439,6 @@ async function sendQuery() {
         speak(data.answer);
     } catch (err) {
     } finally {
-        if (topNeon) topNeon.classList.remove('animate-neon');
         if (bottomNeon) bottomNeon.classList.remove('animate-neon');
     }
 }
