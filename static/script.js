@@ -411,15 +411,10 @@ async function sendQuery() {
     noteContent.appendChild(u);
     noteContent.scrollTop = noteContent.scrollHeight;
 
-    if (topNeon) topNeon.classList.add('animate-neon');
-    if (bottomNeon) bottomNeon.classList.add('animate-neon');
+    if (topNeon) topNeon.classList.add('animate-neon-surge');
+    if (bottomNeon) bottomNeon.classList.add('animate-neon-surge');
 
-    let finalQuery = q;
-    if (isAnalysisMode) {
-        finalQuery = "analyze: " + q;
-    } else {
-        finalQuery = q + "\n\n[SYSTEM: This is standard mode. DO NOT generate charts. Text only.]";
-    }
+    let finalQuery = isAnalysisMode ? "analyze: " + q : q;
 
     try {
         const resp = await apiFetch('/query', {
@@ -439,7 +434,8 @@ async function sendQuery() {
         speak(data.answer);
     } catch (err) {
     } finally {
-        if (bottomNeon) bottomNeon.classList.remove('animate-neon');
+        if (topNeon) topNeon.classList.remove('animate-neon-surge');
+        if (bottomNeon) bottomNeon.classList.remove('animate-neon-surge');
     }
 }
 

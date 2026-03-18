@@ -195,19 +195,17 @@ html.dark canvas {
     word-break: break-word;
 }
 
-@keyframes neon-breath {
+@keyframes neon-surge {
     0%, 100% {
         filter: brightness(1);
         box-shadow: 0 -8px 32px -8px rgba(0, 122, 255, 0.3);
-        border-color: rgba(0, 122, 255, 0.2);
     }
     50% {
-        filter: brightness(1.3);
-        box-shadow: 0 -8px 45px -2px rgba(0, 122, 255, 0.6);
-        border-color: rgba(0, 122, 255, 0.5);
+        filter: brightness(1.35);
+        box-shadow: 0 -8px 50px -2px rgba(0, 122, 255, 0.7);
     }
 }
 
-.animate-neon {
-    animation: neon-breath 3s ease-in-out infinite !important;
+html.dark .animate-neon-surge {
+    animation: neon-surge 3s ease-in-out infinite !important;
 }
