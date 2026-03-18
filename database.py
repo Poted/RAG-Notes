@@ -20,6 +20,16 @@ class GoogleEmbeddings(EmbeddingFunction):
 embedding_fn = GoogleEmbeddings()
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
 
+def get_user_col_name(username: str, context_name: str) -> str:
+    return f"u_{username}_{context_name}"
+
+def get_vector_collection(username: str, context_name: str):
+    collection_name = get_user_col_name(username, context_name)
+    return chroma_client.get_or_create_collection(
+        name=collection_name,
+        embedding_function=embedding_fn
+    )
+
 def get_vector_collection(username: str, context_name: str):
     collection_name = f"{username}_{context_name}"
     return chroma_client.get_or_create_collection(
