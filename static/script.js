@@ -25,7 +25,6 @@ const chartColors = [
 ];
 
 const sessionId = "global_user_session";
-
 let authHeader = localStorage.getItem('auth_data');
 
 async function apiFetch(url, options = {}) {
@@ -337,7 +336,7 @@ function renderMarkdownWithCharts(text, container) {
             new Chart(c, cfg);
         } catch (e) {
             console.error("Chart error:", e);
-            c.outerHTML = `<div class="flex items-center justify-center h-full text-red-500 text-xs font-medium">Błąd renderowania wykresu. Zbyt skomplikowane dane.</div>`;
+            c.outerHTML = `<div class="flex items-center justify-center h-full text-red-500 text-xs font-medium">Render error.</div>`;
         }
         lastIndex = chartRegex.lastIndex;
     }
@@ -354,10 +353,8 @@ let isAnalysisMode = false;
 function toggleMode() {
     isAnalysisMode = !isAnalysisMode;
     const btn = document.getElementById('action-btn');
-    if (isAnalysisMode) {
-        btn.textContent = "Analyze";
-    } else {
-        btn.textContent = "Ask";
+    if (btn) {
+        btn.textContent = isAnalysisMode ? "Analyze" : "Ask";
     }
 }
 
@@ -383,7 +380,7 @@ function typePlaceholder() {
     let typeSpeed = pIsDeleting ? 30 : 80;
 
     if (!pIsDeleting && pCharIndex === currentPhrase.length) {
-        typeSpeed = 2000;
+        typeSpeed = 5000;
         pIsDeleting = true;
     } else if (pIsDeleting && pCharIndex === 0) {
         pIsDeleting = false;
@@ -400,7 +397,8 @@ async function sendQuery() {
     const ctx = contextSelect.value;
     const input = document.getElementById('query-input');
     const model = document.getElementById('model-select').value;
-    const neon = document.getElementById('neon-divider');
+    const topNeon = document.getElementById('top-neon');
+    const bottomNeon = document.getElementById('bottom-neon');
     
     let q = input.value;
     if(!q) return;
@@ -413,11 +411,14 @@ async function sendQuery() {
     noteContent.appendChild(u);
     noteContent.scrollTop = noteContent.scrollHeight;
 
-    if (neon) neon.classList.add('animate-pulse', 'brightness-150');
+    if (topNeon) topNeon.classList.add('animate-pulse', 'brightness-150');
+    if (bottomNeon) bottomNeon.classList.add('animate-pulse', 'brightness-150');
 
     let finalQuery = q;
     if (isAnalysisMode) {
         finalQuery = "analyze: " + q;
+    } else {
+        finalQuery = q + "\n\n[SYSTEM: This is standard mode. DO NOT generate charts. Text only.]";
     }
 
     try {
@@ -438,7 +439,8 @@ async function sendQuery() {
         speak(data.answer);
     } catch (err) {
     } finally {
-        if (neon) neon.classList.remove('animate-pulse', 'brightness-150');
+        if (topNeon) topNeon.classList.remove('animate-pulse', 'brightness-150');
+        if (bottomNeon) bottomNeon.classList.remove('animate-pulse', 'brightness-150');
     }
 }
 
