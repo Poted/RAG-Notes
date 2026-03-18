@@ -19,7 +19,6 @@
             if(confirm("Are you sure you want to log out?")) {
                 localStorage.removeItem('auth_data');
                 localStorage.removeItem('chat_session_id');
-                
                 window.location.href = window.location.pathname + "?nocache=" + new Date().getTime();
             }
         }
@@ -151,6 +150,6 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=2"></script>
+    <script src="/static/script.js?v=4"></script>
 </body>
 </html>
