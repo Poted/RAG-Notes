@@ -14,7 +14,7 @@ class GoogleEmbeddings(EmbeddingFunction):
             contents=input,
             config={'task_type': 'retrieval_document'}
         )
-        return result.embeddings
+        return [emb.values for emb in result.embeddings]
 
 embedding_fn = GoogleEmbeddings()
 chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
