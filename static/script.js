@@ -467,13 +467,3 @@ async function clearChat() {
 }
 
 document.getElementById('query-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendQuery(); });
-
-function logoutUser() {
-    if(confirm("Are you sure you want to log out?")) {
-        localStorage.removeItem('auth_data');
-        
-        localStorage.removeItem('chat_session_id');
-        
-        window.location.href = window.location.pathname + "?refresh=" + new Date().getTime();
-    }
-}
