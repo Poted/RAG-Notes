@@ -213,7 +213,7 @@ async def query(request: QueryRequest, username: str = Depends(authenticate)):
         h_str = "\n".join([f"{m['role'].capitalize()}: {m['content']}" for m in hist]) if hist else "No history."
         
         is_forced = request.question.strip().lower().startswith("analyze:")
-        clean_q = re.sub(r'(?i)^analyze:\s*', '', request.question)
+        clean_q = re.sub(r'(?i)^analyze:\s*', '', request.question).strip()
         
         cfg = types.GenerateContentConfig(response_mime_type="application/json", response_schema=QueryAnalysis, temperature=0.0)
         ana_resp = generate_with_retry(request.model_name, get_analysis_prompt(cur_date, h_str, clean_q), config=cfg)
@@ -235,10 +235,11 @@ async def query(request: QueryRequest, username: str = Depends(authenticate)):
             ctx = "\n\n".join(res['documents'][0]) if res['documents'] else ""
             
         sys_inst = get_system_instructions(cur_date, h_str)
+        
         if not ana.is_analytical:
             sys_inst += "\n\nCRITICAL: This is standard mode. DO NOT generate charts. Text only."
         else:
-            sys_inst += "\n\nCRITICAL: You are in ANALYTICAL MODE. You MUST generate a chart using [CHART]...[/CHART] format. Do NOT offer it, generate it immediately based on the context or general knowledge."
+            sys_inst += "\n\nCRITICAL: You are in ANALYTICAL MODE. You MUST generate a chart using [CHART]...[/CHART] format."
             
         resp = generate_with_retry(request.model_name, f"{sys_inst}\n\nContext:\n{ctx}\n\nQuestion: {q}\n\nAnswer:")
         
