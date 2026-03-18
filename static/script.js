@@ -88,8 +88,6 @@ function toggleDarkMode() {
     if (typeof Chart !== 'undefined') {
         Chart.defaults.color = isDark ? '#e5e5ea' : '#1d1d1f';
         Chart.defaults.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-        
-        // Usunięto sztywne nadpisywanie kolorów słupków, aby pozwolić na różnorodność
 
         for (let id in Chart.instances) {
             Chart.instances[id].update();
@@ -164,7 +162,7 @@ function speak(text) {
 
 async function fetchContexts() {
     try {
-        const resp = await apiFetch('/contexts');
+        const resp = await apiFetch(`/contexts?t=${Date.now()}`);
         if (!resp.ok) return;
         const data = await resp.json();
         const current = contextSelect.value;
@@ -241,7 +239,7 @@ async function fetchModels() {
 async function loadHistory() {
     const ctx = contextSelect.value;
     if (!ctx) return;
-    const resp = await apiFetch(`/history?session_id=${sessionId}&context_name=${ctx}`);
+    const resp = await apiFetch(`/history?session_id=${sessionId}&context_name=${ctx}&t=${Date.now()}`);
     if (!resp.ok) return;
     const data = await resp.json();
     noteContent.innerHTML = '';
@@ -391,7 +389,7 @@ async function addDoc() {
 async function loadDocs() {
     const ctx = contextSelect.value;
     if (!ctx) return;
-    const url = `/documents?context_name=${ctx}&limit=${limit}&offset=${currentOffset}${currentSearch ? '&search=' + encodeURIComponent(currentSearch) : ''}`;
+    const url = `/documents?context_name=${ctx}&limit=${limit}&offset=${currentOffset}${currentSearch ? '&search=' + encodeURIComponent(currentSearch) : ''}&t=${Date.now()}`;
     const resp = await apiFetch(url);
     if (!resp.ok) return;
     const data = await resp.json();
