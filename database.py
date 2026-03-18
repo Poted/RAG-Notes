@@ -1,6 +1,7 @@
 import sqlite3
 import chromadb
 from google import genai
+from google.genai import types
 from chromadb.utils.embedding_functions import EmbeddingFunction
 from config import CHROMA_PATH, DB_PATH, API_KEY
 from werkzeug.security import generate_password_hash
@@ -10,9 +11,9 @@ client = genai.Client(api_key=API_KEY)
 class GoogleEmbeddings(EmbeddingFunction):
     def __call__(self, input: list[str]) -> list[list[float]]:
         result = client.models.embed_content(
-            model='text-embedding-004',
+            model='gemini-embedding-001',
             contents=input,
-            config={'task_type': 'retrieval_document'}
+            config=types.EmbedContentConfig(task_type="RETRIEVAL_DOCUMENT")
         )
         return [emb.values for emb in result.embeddings]
 
