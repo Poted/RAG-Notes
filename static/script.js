@@ -12,21 +12,19 @@ const limit = 10;
 let currentSearch = "";
 let searchTimeout;
 
-// Nowoczesna paleta kolorów (iOS Vibrant)
 const chartColors = [
-    '#ff3b30', // Red
-    '#ff9500', // Orange
-    '#ffcc00', // Yellow
-    '#34c759', // Green
-    '#007aff', // Blue
-    '#5856d6', // Indigo
-    '#af52de', // Purple
-    '#ff2d55', // Pink
-    '#a2845e'  // Brown
+    '#ff3b30',
+    '#ff9500',
+    '#ffcc00',
+    '#34c759',
+    '#007aff',
+    '#5856d6',
+    '#af52de',
+    '#ff2d55',
+    '#a2845e' 
 ];
 
-const sessionId = localStorage.getItem('chat_session_id') || Math.random().toString(36).substring(2, 15);
-localStorage.setItem('chat_session_id', sessionId);
+const sessionId = "global_user_session";
 
 let authHeader = localStorage.getItem('auth_data');
 
@@ -290,24 +288,22 @@ function renderMarkdownWithCharts(text, container) {
         container.appendChild(can);
 
         try {
-            const cfg = JSON.parse(match[1].trim());
+            let rawJson = match[1].trim();
+            rawJson = rawJson.replace(/```json/gi, '').replace(/```/g, '').trim();
+            
+            const cfg = JSON.parse(rawJson);
             cfg.options = cfg.options || {};
             cfg.options.maintainAspectRatio = false;
 
-            // Logika kolorowania
             cfg.data.datasets.forEach((ds) => {
                 const type = cfg.type.toLowerCase();
                 
-                // Jeśli to kołowy/pączek - wymuś całą paletę kolorów
                 if (type === 'pie' || type === 'doughnut') {
                     ds.backgroundColor = chartColors;
                     ds.borderColor = isDark ? '#1c1c1e' : '#ffffff';
                     ds.borderWidth = 2;
-                } 
-                // Jeśli to słupki/linie - użyj kolorów, jeśli model wysłał szary lub nic
-                else {
+                } else {
                     if (!ds.backgroundColor || ds.backgroundColor === '#007aff' || ds.backgroundColor === '#ccc') {
-                        // Jeśli jest wiele danych w jednym zestawie, daj tablicę kolorów
                         if (ds.data.length > 1) {
                             ds.backgroundColor = chartColors.slice(0, ds.data.length);
                         } else {
@@ -320,6 +316,7 @@ function renderMarkdownWithCharts(text, container) {
             new Chart(c, cfg);
         } catch (e) {
             console.error("Chart error:", e);
+            c.outerHTML = `<div class="flex items-center justify-center h-full text-red-500 text-xs font-medium">Błąd renderowania wykresu. Zbyt skomplikowane dane.</div>`;
         }
         lastIndex = chartRegex.lastIndex;
     }
