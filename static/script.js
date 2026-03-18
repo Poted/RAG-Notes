@@ -188,15 +188,38 @@ async function createContextAPI(name) {
     });
 }
 
-async function createNewContext() {
-    const name = prompt("Name (alphanumeric):");
+function createNewContext() {
+    const modal = document.getElementById('context-modal');
+    const input = document.getElementById('new-context-name');
+    input.value = '';
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => input.focus(), 100);
+}
+
+function closeContextModal() {
+    const modal = document.getElementById('context-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+async function submitNewContext() {
+    const input = document.getElementById('new-context-name');
+    const name = input.value;
     if (!name) return;
+    
     const clean = name.replace(/[^a-zA-Z0-9_-]/g, "").toLowerCase();
+    
     await createContextAPI(clean);
     await fetchContexts();
     contextSelect.value = clean;
     changeContext();
+    closeContextModal();
 }
+
+document.getElementById('new-context-name').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') submitNewContext();
+});
 
 async function deleteCurrentContext() {
     const ctx = contextSelect.value;

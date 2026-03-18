@@ -150,6 +150,26 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=4"></script>
+    <div id="context-modal" class="fixed inset-0 z-[100] bg-white/80 dark:bg-[#0d0e12]/90 backdrop-blur-2xl hidden items-center justify-center p-6 transition-all duration-300">
+        <div class="w-full max-w-sm bg-white dark:bg-[#1c1c1e] p-8 rounded-[32px] shadow-2xl border border-gray-100 dark:border-white/5 elegant-glow text-center">
+            <h2 class="text-2xl font-bold mb-2 dark:text-white">Create new context</h2>
+            <p class="text-sm text-gray-500 dark:text-[#8e8e93] mb-8">Enter a unique name for your workspace.</p>
+            
+            <div class="space-y-4">
+                <input type="text" id="new-context-name" placeholder="Name (alphanumeric)" class="w-full p-4 bg-gray-100 dark:bg-[#23252d] border-none rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 dark:text-white transition-all">
+                
+                <div class="flex gap-3 mt-2">
+                    <button onclick="closeContextModal()" class="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-[#3a3a3c] dark:hover:bg-[#48484a] text-gray-800 dark:text-white font-bold py-4 rounded-2xl transition-all">
+                        Cancel
+                    </button>
+                    <button onclick="submitNewContext()" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-500/20 transition-all">
+                        Create
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js?v=5"></script>
 </body>
 </html>
