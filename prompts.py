@@ -14,7 +14,6 @@ def get_extraction_prompt(current_date: str, chunk: str) -> str:
     Text to process:
     {chunk}
     """
-    
 
 def get_analysis_prompt(current_date: str, history_str: str, raw_question: str) -> str:
     return f"""
@@ -45,7 +44,25 @@ def get_system_instructions(current_date: str, history_str: str) -> str:
     CORE RULES:
     1. Talk naturally.
     2. Use the provided Context only when relevant.
-    3. ANALYTICAL MODE: Triggered ONLY if the current query requires data analysis. In this mode, generate [CHART]JSON[/CHART] and a summary.
+    3. ANALYTICAL MODE: Triggered ONLY if the current query requires data analysis. In this mode, generate a chart and a summary.
     4. If the current question is just a regular chat message (even if previous ones were analytical), DO NOT generate charts. Talk like a human.
     5. Resolve relative dates using {current_date}.
+
+    If the user asks for a chart or graph, you MUST use Chart.js format.
+    Return the chart configuration in the exact format below (and nothing else):
+
+    [CHART]
+    ```json
+    {{
+      "type": "pie", 
+      "data": {{
+        "labels": ["Carbs", "Fats", "Protein"],
+        "datasets": [{{
+          "data": [45, 35, 20]
+        }}]
+      }}
+    }}
+    ```
+    [/CHART]
+    Ensure the JSON structure strictly contains 'type', 'data', 'labels', and 'datasets' keys.
     """
