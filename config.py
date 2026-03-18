@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
-DATA_DIR = os.getenv("DATA_DIR", "/app/data")
+DATA_DIR = "/app/data"
 
 os.makedirs(DATA_DIR, exist_ok=True)
 
