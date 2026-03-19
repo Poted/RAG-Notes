@@ -408,7 +408,7 @@ async function sendQuery() {
 
     const u = document.createElement('div');
     u.className = "border-l-4 border-blue-500 pl-4 py-1 mb-6 bg-gray-50/50 rounded-r-lg";
-    u.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 pt-2">Question</h4><p class="text-[15px] sm:text-base font-medium text-gray-900 pb-2">${q}</p>`;
+    u.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 pt-2">Question</h4><p class="text-[15px] sm:text-base font-medium text-gray-900 pb-2 break-all">${q}</p>`;
     noteContent.appendChild(u);
     noteContent.scrollTop = noteContent.scrollHeight;
 
@@ -547,16 +547,4 @@ async function clearChat() {
     loadHistory();
 }
 
-const queryInput = document.getElementById('query-input');
-
-queryInput.addEventListener('input', function() {
-    this.style.height = 'auto';
-    this.style.height = this.scrollHeight + 'px';
-});
-
-queryInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendQuery();
-    }
-});
+document.getElementById('query-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendQuery(); });

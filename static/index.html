@@ -13,7 +13,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/style.css?v=4">
+    <link rel="stylesheet" href="/static/style.css?v=5">
     <script>
         function logoutUser() {
             if(confirm("Are you sure you want to log out?")) {
@@ -116,9 +116,9 @@
             <div class="flex gap-2 sm:gap-3 items-stretch">
                 
                 <div class="relative flex-1 flex items-center bg-gray-100 dark:bg-[#23252d] rounded-full pr-2 transition-all duration-300 elegant-glow">
-                    <textarea id="query-input" rows="1" autocomplete="off" autocorrect="off" spellcheck="true"
-                        class="w-full p-4 pl-5 bg-transparent outline-none text-sm dark:text-white resize-none overflow-y-auto min-h-[52px] max-h-[150px] leading-relaxed block scrollbar-hide" 
-                        placeholder=""></textarea>
+                    <input type="text" id="query-input" 
+                        class="w-full h-full p-4 pl-5 bg-transparent outline-none text-sm dark:text-white" 
+                        placeholder="">
                     <button id="mic-btn" onclick="toggleMic()" class="text-gray-500 dark:text-[#8e8e93] hover:text-[#ff3b30] transition-all p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#343743] shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
@@ -181,6 +181,6 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=16"></script>
+    <script src="/static/script.js?v=17"></script>
 </body>
 </html>
