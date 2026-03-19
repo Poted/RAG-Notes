@@ -269,8 +269,8 @@ async function loadHistory() {
         data.history.forEach(msg => {
             const div = document.createElement('div');
             if (msg.role === 'user') {
-                div.className = "border-l-4 border-blue-500 pl-4 py-1 mb-6 bg-gray-50/50 rounded-r-lg";
-                div.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 pt-2">Question</h4><p class="text-[15px] sm:text-base font-medium text-gray-900 pb-2">${msg.content}</p>`;
+                div.className = "border-l-4 border-blue-500 pl-4 pr-6 py-1 mb-6 bg-gray-50/50 rounded-r-lg max-w-full";
+                div.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 pt-2">Question</h4><p class="text-[15px] sm:text-base font-medium text-gray-900 pb-2 pr-2 break-all">${msg.content}</p>`;
             } else {
                 div.className = "prose max-w-none pb-8 border-b border-gray-100";
                 div.innerHTML = `<h4 class="text-[10px] font-bold text-gray-400 uppercase mb-3 tracking-widest">Knowledge Analysis</h4>`;
@@ -407,8 +407,8 @@ async function sendQuery() {
     input.style.height = 'auto';
 
     const u = document.createElement('div');
-    u.className = "border-l-4 border-blue-500 pl-4 py-1 mb-6 bg-gray-50/50 rounded-r-lg";
-    u.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 pt-2">Question</h4><p class="text-[15px] sm:text-base font-medium text-gray-900 pb-2 break-all">${q}</p>`;
+    u.className = "border-l-4 border-blue-500 pl-4 pr-6 py-1 mb-6 bg-gray-50/50 rounded-r-lg max-w-full";
+    u.innerHTML = `<h4 class="text-[10px] font-bold text-blue-500 uppercase mb-1 pt-2">Question</h4><p class="text-[15px] sm:text-base font-medium text-gray-900 pb-2 pr-2 break-all">${q}</p>`;
     noteContent.appendChild(u);
     noteContent.scrollTop = noteContent.scrollHeight;
 
