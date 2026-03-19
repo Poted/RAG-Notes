@@ -400,10 +400,11 @@ async function sendQuery() {
     const topNeon = document.getElementById('top-neon');
     const bottomNeon = document.getElementById('bottom-neon');
     
-    let q = input.value;
+    let q = input.value.trim();
     if(!q) return;
     
     input.value = '';
+    input.style.height = 'auto';
 
     const u = document.createElement('div');
     u.className = "border-l-4 border-blue-500 pl-4 py-1 mb-6 bg-gray-50/50 rounded-r-lg";
@@ -546,4 +547,16 @@ async function clearChat() {
     loadHistory();
 }
 
-document.getElementById('query-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendQuery(); });
+const queryInput = document.getElementById('query-input');
+
+queryInput.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+});
+
+queryInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendQuery();
+    }
+});
