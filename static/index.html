@@ -13,7 +13,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/style.css?v=2">
+    <link rel="stylesheet" href="/static/style.css?v=3">
     <script>
         function logoutUser() {
             if(confirm("Are you sure you want to log out?")) {
@@ -116,7 +116,7 @@
             <div class="flex gap-2 sm:gap-3 items-stretch">
                 
                 <div class="relative flex-1 flex items-center bg-gray-100 dark:bg-[#23252d] rounded-full pr-2 transition-all duration-300 elegant-glow">
-                    <input type="text" id="query-input" 
+                    <input type="search" autocomplete="off" autocorrect="off" spellcheck="false" id="query-input" 
                         class="w-full h-full p-4 pl-5 bg-transparent outline-none text-sm dark:text-white" 
                         placeholder="">
                     <button id="mic-btn" onclick="toggleMic()" class="text-gray-500 dark:text-[#8e8e93] hover:text-[#ff3b30] transition-all p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#343743] shrink-0">
@@ -181,6 +181,6 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=14"></script>
+    <script src="/static/script.js?v=15"></script>
 </body>
 </html>

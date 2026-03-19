@@ -195,17 +195,28 @@ html.dark canvas {
     word-break: break-word;
 }
 
-@keyframes neon-surge {
+@keyframes shadow-breath-dark {
     0%, 100% {
         box-shadow: 0 -8px 32px -8px rgba(0, 122, 255, 0.3);
-        background-color: rgba(44, 44, 46, 0.8);
     }
     50% {
-        box-shadow: 0 -20px 60px 5px rgba(0, 122, 255, 0.6);
-        background-color: rgba(55, 60, 75, 0.95);
+        box-shadow: 0 -15px 50px 0px rgba(0, 122, 255, 0.65);
     }
 }
 
+@keyframes shadow-breath-light {
+    0%, 100% {
+        box-shadow: 0 -4px 15px -4px rgba(0, 0, 0, 0.05);
+    }
+    50% {
+        box-shadow: 0 -10px 30px -2px rgba(0, 122, 255, 0.3);
+    }
+}
+
+.animate-neon-surge {
+    animation: shadow-breath-light 2.5s ease-in-out infinite !important;
+}
+
 html.dark .animate-neon-surge {
-    animation: neon-surge 2.5s ease-in-out infinite !important;
+    animation: shadow-breath-dark 2.5s ease-in-out infinite !important;
 }
