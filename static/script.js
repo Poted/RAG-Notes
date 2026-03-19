@@ -130,7 +130,7 @@ if ('webkitSpeechRecognition' in window) {
     recognition = new webkitSpeechRecognition();
     recognition.lang = 'pl-PL';
     recognition.onresult = (e) => {
-        document.getElementById('query-input').value = e.results[0][0].transcript;
+        document.getElementById('chat-input-field').value = e.results[0][0].transcript;
         sendQuery();
     };
     recognition.onend = () => document.getElementById('mic-btn').classList.remove('mic-active');
@@ -364,7 +364,7 @@ let pCharIndex = 0;
 let pIsDeleting = false;
 
 function typePlaceholder() {
-    const input = document.getElementById('query-input');
+    const input = document.getElementById('chat-input-field');
     if (!input) return;
 
     const currentPhrase = placeholderPhrases[pPhraseIndex];
@@ -395,7 +395,7 @@ setTimeout(typePlaceholder, 1000);
 
 async function sendQuery() {
     const ctx = contextSelect.value;
-    const input = document.getElementById('query-input');
+    const input = document.getElementById('chat-input-field');
     const model = document.getElementById('model-select').value;
     const topNeon = document.getElementById('top-neon');
     const bottomNeon = document.getElementById('bottom-neon');
@@ -547,4 +547,4 @@ async function clearChat() {
     loadHistory();
 }
 
-document.getElementById('query-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendQuery(); });
+document.getElementById('chat-input-field').addEventListener('keypress', (e) => { if (e.key === 'Enter') sendQuery(); });

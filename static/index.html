@@ -13,7 +13,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="/static/style.css?v=7">
+    <link rel="stylesheet" href="/static/style.css?v=8">
     <script>
         function logoutUser() {
             if(confirm("Are you sure you want to log out?")) {
@@ -114,15 +114,16 @@
 
         <footer id="bottom-neon" class="shrink-0 p-4 border-t border-gray-200 dark:border-white/5 bg-white/80 dark:bg-[#2c2c2e] backdrop-blur-3xl z-10 pb-8 sm:pb-4 transition-all duration-300">
             <div class="flex gap-2 sm:gap-3 items-stretch">
-                
                 <div class="relative flex-1 flex items-center bg-gray-100 dark:bg-[#23252d] rounded-full pr-2 transition-all duration-300 elegant-glow">
-                    <input type="text" id="query-input" 
-                        name="q" 
+                    <input type="text" id="chat-input-field" 
+                        name="chat-msg" 
                         inputmode="text" 
                         autocomplete="off" 
+                        autocorrect="off"
                         spellcheck="false" 
                         data-lpignore="true"
-                        class="w-full h-full p-4 pl-5 pr-12 bg-transparent outline-none text-sm dark:text-white" 
+                        role="presentation"
+                        class="w-full h-full p-4 pl-5 pr-2 bg-transparent outline-none text-sm dark:text-white" 
                         placeholder="">
                     <button id="mic-btn" onclick="toggleMic()" class="text-gray-500 dark:text-[#8e8e93] hover:text-[#ff3b30] transition-all p-2 rounded-full hover:bg-gray-200 dark:hover:bg-[#343743] shrink-0">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -130,7 +131,6 @@
                         </svg>
                     </button>
                 </div>
-
                 <div class="shrink-0 relative flex items-stretch bg-gray-900 dark:bg-white/10 rounded-full shadow-lg shadow-gray-900/20 dark:shadow-none elegant-glow transition-all duration-300">
                     <button id="action-btn" onclick="sendQuery()" class="text-white pl-6 pr-4 font-bold text-sm hover:bg-white/10 rounded-l-full transition-all flex items-center justify-center w-[100px]">
                         Ask
@@ -186,6 +186,6 @@
         </div>
     </div>
 
-    <script src="/static/script.js?v=19"></script>
+    <script src="/static/script.js?v=20"></script>
 </body>
 </html>
